@@ -5,7 +5,7 @@
 EAPI="4"
 
 PYTHON_DEPEND="2"
-PYTHON_USE_WITH="xml"
+PYTHON_USE_WITH="xml threads"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -30,6 +30,9 @@ DOCS=( README docs/README.xen-bugtool docs/ChangeLog )
 LICENSE="GPL-2"
 SLOT="0"
 IUSE="api custom-cflags debug doc flask hvm qemu pygrub screen xend"
+
+REQUIRED_USE="hvm? ( qemu )"
+
 QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
 	/usr/share/xen/qemu/openbios-sparc64 \
 	/usr/share/xen/qemu/openbios-sparc32"
@@ -51,7 +54,7 @@ DEPEND="${CDEPEND}
 	dev-ml/findlib
 	doc? (
 		app-doc/doxygen
-		dev-tex/latex2html
+		dev-tex/latex2html[png,gif]
 		media-gfx/transfig
 		media-gfx/graphviz
 		dev-tex/xcolor
@@ -65,7 +68,9 @@ DEPEND="${CDEPEND}
 	hvm? (
 		x11-proto/xproto
 		sys-devel/dev86
-	)"
+	)
+	pygrub? ( dev-lang/python[ncurses] )
+	"
 
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
@@ -114,33 +119,8 @@ pkg_setup() {
 		fi
 	fi
 
-	if use doc && ! has_version "dev-tex/latex2html[png,gif]"; then
-		# die early instead of later
-		eerror "USE=doc requires latex2html with image support. Please add"
-		eerror "'png' and/or 'gif' to your use flags and re-emerge latex2html"
-		die "latex2html missing both png and gif flags"
-	fi
-
-	if use pygrub && ! has_version "dev-lang/python[ncurses]"; then
-		eerror "USE=pygrub requires python to be built with ncurses support. Please add"
-		eerror "'ncurses' to your use flags and re-emerge python"
-		die "python is missing ncurses flags"
-	fi
-
-	if ! has_version "dev-lang/python[threads]"; then
-		eerror "Python is required to be built with threading support. Please add"
-		eerror "'threads' to your use flags and re-emerge python"
-		die "python is missing threads flags"
-	fi
-
 	use api     && export "LIBXENAPI_BINDINGS=y"
 	use flask   && export "FLASK_ENABLE=y"
-
-	if use hvm && ! use qemu; then
-		elog "With qemu disabled, it is not possible to use HVM machines " \
-			"or PVM machines with a framebuffer attached in the kernel config" \
-			"The addition of use flag qemu is required when use flag hvm ise selected"
-	fi
 }
 
 src_prepare() {
@@ -205,7 +185,7 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
 
 	# Remove check_curl, new fix to Bug #386487
-	epatch "${FILESDIR}/xen-tools-4.1.1-curl.patch"
+	epatch "${FILESDIR}/${PN}-4.1.1-curl.patch"
 	sed -i -e 's|has_or_fail curl-config|has_or_fail curl-config\nset -ux|' \
 		tools/check/check_curl || die
 
