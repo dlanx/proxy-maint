@@ -6,8 +6,8 @@
 opts="start stop status restart"
 
 depend() {
-	need xenstored xenconsoled xend
-	after dhcp
+	need xenstored xenconsoled
+	after dhcp xend
 }
 
 get_domname() {

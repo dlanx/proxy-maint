@@ -117,13 +117,6 @@ pkg_setup() {
 		fi
 	fi
 
-	if use doc && ! has_version "dev-tex/latex2html[png,gif]"; then
-		# die early instead of later
-		eerror "USE=doc requires latex2html with image support. Please add"
-		eerror "'png' and/or 'gif' to your use flags and re-emerge latex2html"
-		die "latex2html missing both png and gif flags"
-	fi
-
 	use api     && export "LIBXENAPI_BINDINGS=y"
 	use flask   && export "FLASK_ENABLE=y"
 }
@@ -305,3 +298,4 @@ pkg_postinst() {
 pkg_postrm() {
 	python_mod_cleanup $(use pygrub && echo grub) xen
 }
+
