@@ -3,9 +3,8 @@
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
 
 EAPI="4"
-
 PYTHON_DEPEND="2"
-PYTHON_USE_WITH="xml"
+PYTHON_USE_WITH="xml threads"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -31,6 +30,13 @@ LICENSE="GPL-2"
 SLOT="0"
 IUSE="api custom-cflags debug doc flask hvm qemu pygrub screen xend"
 
+REQUIRED_USE="hvm? ( qemu )"
+
+QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
+	/usr/share/xen/qemu/openbios-sparc64 \
+	/usr/share/xen/qemu/openbios-sparc32"
+QA_WX_LOAD=${QA_PRESTRIPPED}
+
 CDEPEND="<dev-libs/yajl-2
 	dev-python/lxml
 	dev-python/pypam
@@ -47,7 +53,7 @@ DEPEND="${CDEPEND}
 	dev-ml/findlib
 	doc? (
 		app-doc/doxygen
-		dev-tex/latex2html
+		dev-tex/latex2html[png,gif]
 		media-gfx/transfig
 		media-gfx/graphviz
 		dev-tex/xcolor
@@ -61,7 +67,8 @@ DEPEND="${CDEPEND}
 	hvm? (
 		x11-proto/xproto
 		sys-devel/dev86
-	)"
+	)	pygrub? ( dev-lang/python[ncurses] )
+	"
 
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
@@ -117,26 +124,8 @@ pkg_setup() {
 		die "latex2html missing both png and gif flags"
 	fi
 
-	if use pygrub && ! has_version "dev-lang/python[ncurses]"; then
-		eerror "USE=pygrub requires python to be built with ncurses support. Please add"
-		eerror "'ncurses' to your use flags and re-emerge python"
-		die "python is missing ncurses flags"
-	fi
-
-	if ! has_version "dev-lang/python[threads]"; then
-		eerror "Python is required to be built with threading support. Please add"
-		eerror "'threads' to your use flags and re-emerge python"
-		die "python is missing threads flags"
-	fi
-
 	use api     && export "LIBXENAPI_BINDINGS=y"
 	use flask   && export "FLASK_ENABLE=y"
-
-	if use hvm && ! use qemu; then
-		elog "With qemu disabled, it is not possible to use HVM machines " \
-			"or PVM machines with a framebuffer attached in the kernel config" \
-			"The addition of use flag qemu is required when use flag hvm ise selected"
-	fi
 }
 
 src_prepare() {
@@ -155,6 +144,7 @@ src_prepare() {
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
+
 	# try and remove all the default custom-cflags
 	find "${S}" -name Makefile -o -name Rules.mk -o -name Config.mk -exec sed \
 		-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
@@ -179,7 +169,7 @@ src_prepare() {
 	# Don't bother with qemu, only needed for fully virtualised guests
 	if ! use qemu; then
 		sed -e "/^CONFIG_IOEMU := y$/d" -i config/*.mk || die
-		sed -e "s:install-tools\: tools/ioemu-dir:install-tools\: :g"  -i Makefile || die
+		sed -e "s:install-tools\: tools/ioemu-dir:install-tools\: :g" -i Makefile || die
 	fi
 
 	# Fix build for gcc-4.6
@@ -219,7 +209,7 @@ src_install() {
 	export INITD_DIR=/etc/init.d
 	export CONFIG_LEAF_DIR=default
 
-	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
+	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
 	python_convert_shebangs -r 2 "${ED}"
 
 	# Remove RedHat-specific stuff
@@ -231,29 +221,26 @@ src_install() {
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
 
-	dodoc README docs/README.xen-bugtool docs/ChangeLog
 	if use doc; then
-		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs \
-			|| die "install docs failed"
+		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
 		dohtml -r docs/api/
 		docinto pdf
 		dodoc ${DOCS[@]}
-#docs/api/tools/python/latex/refman.pdf
 		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
 	fi
 	rm -rf "${ED}"/usr/share/doc/xen/
 	doman docs/man?/*
 
 	if use xend; then
-		newinitd "${FILESDIR}"/xend.initd-r2 xend || die "Couldn't install xen.initd"
+		newinitd "${FILESDIR}"/xend.initd-r2 xend
 	fi
-
 	newconfd "${FILESDIR}"/xendomains.confd xendomains
-	newconfd "${FILESDIR}"/xenconsoled.confd xenconsoled
 	newconfd "${FILESDIR}"/xenstored.confd xenstored
-	newinitd "${FILESDIR}"/xenstored.initd xenstored
-	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
+	newconfd "${FILESDIR}"/xenconsoled.confd xenconsoled
+	newinitd "${FILESDIR}"/xendomains.initd-r2 xendomains
+	newinitd "${FILESDIR}"/xenstored.initd xenstored \
+		"${FILESDIR}"/xenconsoled.initd xenconsoled
 
 	if use screen; then
 		cat "${FILESDIR}"/xendomains-screen.confd >> "${ED}"/etc/conf.d/xendomains || die
@@ -261,6 +248,7 @@ src_install() {
 		keepdir /var/log/xen-consoles
 	fi
 
+	python_convert_shebangs -r 2 "${ED}"
 	# xend expects these to exist
 	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 

@@ -3,7 +3,6 @@
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.1.2-r1.ebuild,v 1.1 2011/11/11 17:50:59 neurogeek Exp $
 
 EAPI="4"
-
 PYTHON_DEPEND="2"
 PYTHON_USE_WITH="xml threads"
 
@@ -68,8 +67,7 @@ DEPEND="${CDEPEND}
 	hvm? (
 		x11-proto/xproto
 		sys-devel/dev86
-	)
-	pygrub? ( dev-lang/python[ncurses] )
+	)	pygrub? ( dev-lang/python[ncurses] )
 	"
 
 RDEPEND="${CDEPEND}
@@ -139,6 +137,7 @@ src_prepare() {
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
+
 	# try and remove all the default custom-cflags
 	find "${S}" -name Makefile -o -name Rules.mk -o -name Config.mk -exec sed \
 		-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
@@ -237,11 +236,11 @@ src_install() {
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
 
-	dodoc README docs/README.xen-bugtool docs/ChangeLog
+#	dodoc README docs/README.xen-bugtool docs/ChangeLog
 	if use doc; then
 		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
-	dohtml -r docs/api/
+		dohtml -r docs/api/
 		docinto pdf
 		dodoc ${DOCS[@]}
 	#docs/api/tools/python/latex/refman.pdf
@@ -266,6 +265,7 @@ src_install() {
 		keepdir /var/log/xen-consoles
 	fi
 
+	python_convert_shebangs -r 2 "${ED}"
 	# xend expects these to exist
 	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 
