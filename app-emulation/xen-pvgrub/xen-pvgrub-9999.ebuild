@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-pvgrub/xen-pvgrub-9999.ebuild,v 1.4 2011/09/21 07:55:04 mgorny Exp $
 
-EAPI="2"
+EAPI="4"
 
 inherit flag-o-matic eutils multilib mercurial git-2
 
@@ -39,21 +39,17 @@ pkg_setup() {
 	export "CONFIG_QEMU=${WORKDIR}/${GIT_REPO}"
 }
 
-src_unpack() {
+src_prepare() {
 	default_src_unpack
-
 	# unpack xen
 	mercurial_src_unpack
 
 	local EGIT_COMMIT=$(sed -n -e "s/QEMU_TAG := \(.*\)/\1/p" "${S}"/Config.mk)
-
 	# unpack ioemu repos
 	local S=${WORKDIR}/${GIT_REPO}
 	local EGIT_NOUNPACK=1
 	git-2_src_unpack
-}
 
-src_prepare() {
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
@@ -64,7 +60,7 @@ src_prepare() {
 			-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
 			-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
 			-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
-			-i {} \;
+			-i {} \; || die
 	fi
 
 	sed -i \
@@ -81,28 +77,28 @@ src_compile() {
 		append-flags -fno-strict-overflow
 	fi
 
-	emake -C tools/include || die "prepare libelf headers failed"
+	emake -C tools/include
 
 	if use x86; then
-		emake XEN_TARGET_ARCH="x86_32" -C stubdom pv-grub || die "compile pv-grub_x86_32 failed"
+		emake XEN_TARGET_ARCH="x86_32" -C stubdom pv-grub
 	fi
 	if use amd64; then
-		emake XEN_TARGET_ARCH="x86_64" -C stubdom pv-grub || die "compile pv-grub_x86_64 failed"
+		emake XEN_TARGET_ARCH="x86_64" -C stubdom pv-grub
 		if use multilib; then
 			multilib_toolchain_setup x86
-			emake XEN_TARGET_ARCH="x86_32" -C stubdom pv-grub || die "compile pv-grub_x86_32 failed"
+			emake XEN_TARGET_ARCH="x86_32" -C stubdom pv-grub
 		fi
 	fi
 }
 
 src_install() {
 	if use x86; then
-		emake XEN_TARGET_ARCH="x86_32" DESTDIR="${D}" -C stubdom install-grub || die "install pv-grub_x86_32 failed"
+		emake XEN_TARGET_ARCH="x86_32" DESTDIR="${D}" -C stubdom install-grub
 	fi
 	if use amd64; then
-		emake XEN_TARGET_ARCH="x86_64" DESTDIR="${D}" -C stubdom install-grub || die "install pv-grub_x86_64 failed"
+		emake XEN_TARGET_ARCH="x86_64" DESTDIR="${D}" -C stubdom install-grub
 		if use multilib; then
-			emake XEN_TARGET_ARCH="x86_32" DESTDIR="${D}" -C stubdom install-grub || die "install pv-grub_x86_32 failed"
+			emake XEN_TARGET_ARCH="x86_32" DESTDIR="${D}" -C stubdom install-grub
 		fi
 	fi
 }
