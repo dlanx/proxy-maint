@@ -166,7 +166,13 @@ src_prepare() {
 	fi
 
 	# Fix build for gcc-4.6
-	sed -e "s:-Werror::g" -i  tools/xenstat/xentop/Makefile || die
+	local WERROR=(
+		"tools/libxl/Makefile"
+		"tools/xenstat/xentop/Makefile"
+		)
+	for mf in ${WERROR[@]} ; do
+		sed -e "s:-Werror::g" -i $mf || die
+	done
 
 	# Prevent the downloading of ipxe
 	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
