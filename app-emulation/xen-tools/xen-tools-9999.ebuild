@@ -9,7 +9,9 @@ PYTHON_USE_WITH="xml threads"
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
 	REPO="xen-unstable.hg"
+	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
 	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
+	SRC_URI="$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
 	S="${WORKDIR}/${REPO}"
 	live_eclass="mercurial"
 else
@@ -122,7 +124,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	#cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
+	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
 	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
 
 	# Drop .config
