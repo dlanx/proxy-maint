@@ -11,9 +11,8 @@ if [[ $PV == *9999 ]]; then
 	REPO="xen-unstable.hg"
 	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
 	IPXE_COMMIT="9a93db3f0947484e30e753bbd61a10b17336e20e"
-	IPXE_GIT="https://git.ipxe.org/ipxe.git/snapshot/${IPXE_COMMIT}.tar.gz"
 	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
-	SRC_URI="${IPXE_GIT} ->	ipxe-git-9a93db3f0947484e30e753bbd61a10b17336e20e.tar.gz"
+	SRC_URI="http://dev.gentoo.org/~alexxy/distfiles/ipxe-git-${IPXE_COMMIT}.tar.gz"
 	S="${WORKDIR}/${REPO}"
 	live_eclass="mercurial"
 else
