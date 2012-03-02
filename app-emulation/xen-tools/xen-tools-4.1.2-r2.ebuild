@@ -1,6 +1,6 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.1.2-r2.ebuild,v 1.3 2012/01/12 13:40:01 alexxy Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2"
@@ -9,10 +9,7 @@ PYTHON_USE_WITH="xml threads"
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
 	REPO="xen-unstable.hg"
-	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	IPXE_COMMIT="9a93db3f0947484e30e753bbd61a10b17336e20e"
 	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
-	SRC_URI="http://dev.gentoo.org/~alexxy/distfiles/ipxe-git-${IPXE_COMMIT}.tar.gz"
 	S="${WORKDIR}/${REPO}"
 	live_eclass="mercurial"
 else
@@ -125,7 +122,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	cp "$DISTDIR/ipxe-git-${IPXE_COMMIT}.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
+	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
 	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
 
 	# Drop .config
@@ -169,19 +166,35 @@ src_prepare() {
 	fi
 
 	# Fix build for gcc-4.6
-	local WERROR=(
-		"tools/libxl/Makefile"
-		"tools/xenstat/xentop/Makefile"
-		)
-	for mf in ${WERROR[@]} ; do
-		sed -e "s:-Werror::g" -i $mf || die
-	done
+	sed -e "s:-Werror::g" -i  tools/xenstat/xentop/Makefile || die
+
+	# Fix network broadcast on bridged networks
+	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
+
+	# Do not strip binaries
+	epatch "${FILESDIR}/${PN}-3.3.0-nostrip.patch"
 
 	# Prevent the downloading of ipxe
 	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
 		-e 's:^\tfi:#\tfi:' -i \
 		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
 		-i tools/firmware/etherboot/Makefile || die
+
+	# Fix bridge by idella4, bug #362575
+	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
+
+	# Remove check_curl, new fix to Bug #386487
+	epatch "${FILESDIR}/${PN}-4.1.1-curl.patch"
+	sed -i -e 's|has_or_fail curl-config|has_or_fail curl-config\nset -ux|' \
+		tools/check/check_curl || die
+
+	# Don't build ipxe with pie on hardened, Bug #360805
+	if gcc-specs-pie; then
+		epatch "${FILESDIR}/ipxe-nopie.patch"
+	fi
+
+	# Fix create.py for pyxml Bug 367735
+	epatch "${FILESDIR}/xen-tools-4.1.2-pyxml.patch"
 }
 
 src_compile() {
@@ -211,7 +224,7 @@ src_install() {
 	export INITD_DIR=/etc/init.d
 	export CONFIG_LEAF_DIR=default
 
-	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
+	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
 	python_convert_shebangs -r 2 "${ED}"
 
 	# Remove RedHat-specific stuff
@@ -223,26 +236,28 @@ src_install() {
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
 
+#	dodoc README docs/README.xen-bugtool docs/ChangeLog
 	if use doc; then
 		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
 		dohtml -r docs/api/
 		docinto pdf
 		dodoc ${DOCS[@]}
+	#docs/api/tools/python/latex/refman.pdf
 		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
 	fi
 	rm -rf "${ED}"/usr/share/doc/xen/
 	doman docs/man?/*
 
 	if use xend; then
-		newinitd "${FILESDIR}"/xend.initd-r2 xend
+		newinitd "${FILESDIR}"/xend.initd-r2 xend || die "Couldn't install xen.initd"
 	fi
 	newconfd "${FILESDIR}"/xendomains.confd xendomains
 	newconfd "${FILESDIR}"/xenstored.confd xenstored
 	newconfd "${FILESDIR}"/xenconsoled.confd xenconsoled
 	newinitd "${FILESDIR}"/xendomains.initd-r2 xendomains
-	newinitd "${FILESDIR}"/xenstored.initd xenstored \
-		"${FILESDIR}"/xenconsoled.initd xenconsoled
+	newinitd "${FILESDIR}"/xenstored.initd xenstored
+	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
 
 	if use screen; then
 		cat "${FILESDIR}"/xendomains-screen.confd >> "${ED}"/etc/conf.d/xendomains || die
