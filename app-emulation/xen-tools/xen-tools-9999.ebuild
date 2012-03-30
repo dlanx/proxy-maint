@@ -93,7 +93,7 @@ RESTRICT="test"
 pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
-	export "CONFIG_LOMOUNT=y"
+	export "CONFIG_TESTS=n"
 
 	if use qemu; then
 		export "CONFIG_IOEMU=y"
@@ -182,6 +182,16 @@ src_prepare() {
 		-e 's:^\tfi:#\tfi:' -i \
 		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
 		-i tools/firmware/etherboot/Makefile || die
+
+	# Patch tools/Makefile to build/install qemu & qemu-upstream correctly
+	epatch "${FILESDIR}/${PN}-9999-qemu.patch"
+}
+
+src_configure() {
+	econf \
+		--enable-lomount \
+		BISON=/usr/bin/bison \
+		FLEX=/usr/bin/flex
 }
 
 src_compile() {
@@ -241,8 +251,8 @@ src_install() {
 	newconfd "${FILESDIR}"/xenstored.confd xenstored
 	newconfd "${FILESDIR}"/xenconsoled.confd xenconsoled
 	newinitd "${FILESDIR}"/xendomains.initd-r2 xendomains
-	newinitd "${FILESDIR}"/xenstored.initd xenstored \
-		"${FILESDIR}"/xenconsoled.initd xenconsoled
+	newinitd "${FILESDIR}"/xenstored.initd xenstored
+	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
 
 	if use screen; then
 		cat "${FILESDIR}"/xendomains-screen.confd >> "${ED}"/etc/conf.d/xendomains || die
