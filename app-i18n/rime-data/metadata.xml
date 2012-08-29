@@ -5,5 +5,15 @@
   <herd>cjk</herd>
   <maintainer>
     <email>dennis.yxun@gmail.com</email>
+    <name>Lan Yixun (dlan)</name>
   </maintainer>
+  <maintainer>
+    <email>chen.sst@gmail.com</email>
+    <name>GONG chen</name>
+    <description>Upstream author</description>
+  </maintainer>
+  <upstream>
+		<bugs-to>http://code.google.com/p/rimeime/issues/list</bugs-to>
+		<remote-id type="google-code">rimeime</remote-id>
+  </upstream>
 </pkgmetadata>
