@@ -27,8 +27,6 @@ src_prepare() {
 	# search correct data path
 	sed -i -e 's|/usr/share/rime/brise|/usr/share/rime-data|' \
 		cmake/FindBrise.cmake || die
-	# change the patch
 	sed -i -e '/ibus_rime_traits\.shared_data_dir/s/= shared_data_dir/= \
 		\"\/usr\/share\/rime-data\"/' src/fcitx-rime.c || die
 }
-

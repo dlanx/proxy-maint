@@ -17,8 +17,8 @@ IUSE="static-libs"
 
 RDEPEND="app-i18n/opencc
 	dev-cpp/glog
-	dev-db/kyotocabinet
 	dev-cpp/yaml-cpp
+	dev-db/kyotocabinet
 	>=dev-libs/boost-1.46.0
 	sys-libs/zlib
 	x11-proto/xproto"
