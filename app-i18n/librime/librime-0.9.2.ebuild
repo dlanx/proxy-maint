@@ -4,7 +4,7 @@
 
 EAPI=4
 
-inherit cmake-utils vcs-snapshot
+inherit cmake-utils multilib vcs-snapshot
 
 DESCRIPTION="Rime Input Method Engine library"
 HOMEPAGE="http://code.google.com/p/rimeime/"
@@ -33,6 +33,8 @@ src_configure() {
 	local mycmakeargs=(
 		$(cmake-utils_use_build static-libs STATIC)
 		-DBUILD_DATA=OFF
+		-DLIB_INSTALL_DIR=/usr/$(get_libdir)
 	)
 	cmake-utils_src_configure
 }
+
