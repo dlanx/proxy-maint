@@ -42,6 +42,9 @@ CDEPEND="<dev-libs/yajl-2
 	dev-python/pypam
 	dev-python/pyxml
 	sys-libs/zlib
+	sys-devel/bin86
+	sys-devel/dev86
+	dev-ml/findlib
 	hvm? ( media-libs/libsdl
 		sys-power/iasl )
 	api? ( dev-libs/libxml2 net-misc/curl )"
@@ -92,6 +95,10 @@ pkg_setup() {
 	python_pkg_setup
 	export "CONFIG_LOMOUNT=y"
 
+	if has_version dev-libs/libgcrypt; then
+		export "CONFIG_GCRYPT=y"
+	fi
+
 	if use qemu; then
 		export "CONFIG_IOEMU=y"
 	else
@@ -139,7 +146,7 @@ src_prepare() {
 		einfo "User wants their own CFLAGS - removing defaults"
 
 	# try and remove all the default custom-cflags
-	find "${S}" -name Makefile -o -name Rules.mk -o -name Config.mk -exec sed \
+	find "${S}" \( -name Makefile -o -name Rules.mk -o -name Config.mk \) -exec sed \
 		-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
 		-e 's/CFLAGS\(.*\)=\(.*\)-march=i686\(.*\)/CFLAGS\1=\2\3/' \
 		-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
@@ -154,7 +161,6 @@ src_prepare() {
 
 	# Disable hvm support on systems that don't support x86_32 binaries.
 	if ! use hvm; then
-		chmod 644 tools/check/check_x11_devel
 		sed -e '/^CONFIG_IOEMU := y$/d' -i config/*.mk || die
 		sed -e '/SUBDIRS-$(CONFIG_X86) += firmware/d' -i tools/Makefile || die
 	fi
@@ -166,13 +172,15 @@ src_prepare() {
 	fi
 
 	# Fix build for gcc-4.6
-	sed -e "s:-Werror::g" -i  tools/xenstat/xentop/Makefile || die
+	find "${S}" \( -name Makefile -o -name Rules.mk -o -name Config.mk \) -exec sed \
+		-e "s:-Werror::g" \
+		-i {} \; || die "Failed to remove -Werror"
+
+	# Fix texi2html build error with new texi2html
+	sed -r -e "s:(texi2html.*) -number:\1:" -i tools/qemu-xen-traditional/Makefile
 
 	# Fix network broadcast on bridged networks
 	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
-
-	# Do not strip binaries
-	epatch "${FILESDIR}/${PN}-3.3.0-nostrip.patch"
 
 	# Prevent the downloading of ipxe
 	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
@@ -183,18 +191,10 @@ src_prepare() {
 	# Fix bridge by idella4, bug #362575
 	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
 
-	# Remove check_curl, new fix to Bug #386487
-	epatch "${FILESDIR}/${PN}-4.1.1-curl.patch"
-	sed -i -e 's|has_or_fail curl-config|has_or_fail curl-config\nset -ux|' \
-		tools/check/check_curl || die
-
 	# Don't build ipxe with pie on hardened, Bug #360805
 	if gcc-specs-pie; then
-		epatch "${FILESDIR}/ipxe-nopie.patch"
+		epatch "${FILESDIR}/ipxe-nopie-4.2.0.patch"
 	fi
-
-	# Fix create.py for pyxml Bug 367735
-	epatch "${FILESDIR}/xen-tools-4.1.2-pyxml.patch"
 }
 
 src_compile() {
@@ -276,6 +276,10 @@ src_install() {
 
 	# for xendomains
 	keepdir /etc/xen/auto
+
+	# Temp QA workaround
+	mkdir -p "${ED}"$(get_libdir)
+	mv "${ED}"etc/udev "${ED}"$(get_libdir)
 }
 
 pkg_postinst() {
