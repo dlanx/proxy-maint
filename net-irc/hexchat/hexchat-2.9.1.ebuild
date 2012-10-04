@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Header: /var/cvsroot/gentoo-x86/net-irc/hexchat/hexchat-2.9.1.ebuild,v 1.8 2012/10/02 02:25:18 blueness Exp $
 
 EAPI=4
 
@@ -12,7 +12,7 @@ HOMEPAGE="http://www.hexchat.org/"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc x86"
 IUSE="dbus fastscroll +gtk ipv6 libnotify mmx nls ntlm perl python spell ssl tcl"
 
 RDEPEND=">=dev-libs/glib-2.6.0:2
@@ -29,6 +29,8 @@ RDEPEND=">=dev-libs/glib-2.6.0:2
 DEPEND="${RDEPEND}
 	sys-devel/gettext
 	virtual/pkgconfig"
+
+DOCS="ChangeLog README*"
 
 pkg_setup() {
 	# Added for to fix a sparc seg fault issue by Jason Wever <weeve@gentoo.org>
@@ -77,8 +79,6 @@ src_install() {
 	# install plugin development header
 	insinto /usr/include/hexchat
 	doins src/common/xchat-plugin.h
-
-	dodoc ChangeLog README*
 
 	# remove useless desktop entry when gtk USE flag is unset
 	if ! use gtk ; then
