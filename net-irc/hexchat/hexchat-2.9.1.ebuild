@@ -17,7 +17,6 @@ IUSE="dbus fastscroll +gtk ipv6 libnotify mmx nls ntlm perl python spell ssl tcl
 
 RDEPEND=">=dev-libs/glib-2.6.0:2
 	x11-libs/pango
-	!<net-irc/xchat-gnome-0.9
 	dbus? ( >=dev-libs/dbus-glib-0.71 )
 	gtk? ( >=x11-libs/gtk+-2.10.0:2 )
 	libnotify? ( x11-libs/libnotify )
