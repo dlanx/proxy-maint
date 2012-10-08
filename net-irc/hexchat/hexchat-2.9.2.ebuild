@@ -12,7 +12,7 @@ HOMEPAGE="http://www.hexchat.org/"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc x86"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc ~x86"
 IUSE="dbus fastscroll +gtk ipv6 libnotify mmx nls ntlm perl python spell ssl tcl"
 
 RDEPEND=">=dev-libs/glib-2.6.0:2
@@ -30,7 +30,7 @@ DEPEND="${RDEPEND}
 	sys-devel/gettext
 	virtual/pkgconfig"
 
-DOCS="ChangeLog README*"
+DOCS="ChangeLog COPYING README*"
 
 pkg_setup() {
 	# Added for to fix a sparc seg fault issue by Jason Wever <weeve@gentoo.org>
