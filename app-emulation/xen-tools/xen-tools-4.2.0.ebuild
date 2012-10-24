@@ -15,8 +15,8 @@ if [[ $PV == *9999 ]]; then
 else
 	KEYWORDS="~amd64 ~x86"
 	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz \
-	$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
+	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz"
+# 	$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
 	S="${WORKDIR}/xen-${PV}"
 fi
 
@@ -129,7 +129,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
+#	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
 	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
 
 	# Drop .config
@@ -183,18 +183,18 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
 
 	# Prevent the downloading of ipxe
-	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
-		-e 's:^\tfi:#\tfi:' -i \
-		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
-		-i tools/firmware/etherboot/Makefile || die
+#	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
+#		-e 's:^\tfi:#\tfi:' -i \
+#		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
+#		-i tools/firmware/etherboot/Makefile || die
 
 	# Fix bridge by idella4, bug #362575
 	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
 
 	# Don't build ipxe with pie on hardened, Bug #360805
-	if gcc-specs-pie; then
+#	if gcc-specs-pie; then
 		epatch "${FILESDIR}/ipxe-nopie-4.2.0.patch"
-	fi
+#	fi
 }
 
 src_compile() {
@@ -208,6 +208,7 @@ src_compile() {
 	fi
 
 	unset LDFLAGS
+	unset CFLAGS
 	emake CC=$(tc-getCC) LD=$(tc-getLD) -C tools ${myopt}
 
 	if use doc; then
