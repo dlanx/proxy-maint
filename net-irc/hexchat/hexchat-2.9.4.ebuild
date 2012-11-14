@@ -13,7 +13,7 @@ HOMEPAGE="http://www.hexchat.org/"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux"
-IUSE="dbus fastscroll +gtk ipv6 libnotify nls ntlm perl python spell ssl tcl"
+IUSE="dbus fastscroll +gtk ipv6 libnotify nls ntlm perl python spell ssl"
 
 RDEPEND="dev-libs/glib:2
 	x11-libs/pango
@@ -23,7 +23,6 @@ RDEPEND="dev-libs/glib:2
 	ntlm? ( net-libs/libntlm )
 	perl? ( >=dev-lang/perl-5.8.0 )
 	python? ( =dev-lang/python-2* )
-	tcl? ( dev-lang/tcl )
 	spell? ( app-text/gtkspell:2 )
 	ssl? ( >=dev-libs/openssl-0.9.8u )"
 DEPEND="${RDEPEND}
