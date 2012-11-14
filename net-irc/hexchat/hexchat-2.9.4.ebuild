@@ -49,7 +49,7 @@ src_prepare() {
 			-i configure.ac || die 'sed failed'
 	fi
 
-	./autogen.sh
+	./autogen.sh || die "autogen.sh failed"
 }
 
 src_configure() {
@@ -77,9 +77,7 @@ src_install() {
 	doins src/common/hexchat-plugin.h
 
 	# remove useless desktop entry when gtk USE flag is unset
-	if ! use gtk ; then
-		rm "${ED}"/usr/share/applications -rf
-	fi
+	use gtk || rm "${ED}"/usr/share/applications -rf
 }
 
 pkg_postinst() {
@@ -88,8 +86,8 @@ pkg_postinst() {
 		elog "the GTK-GUI for HexChat but only a text interface called \"hexchat-text\"."
 	fi
 
-	elog "If you're upgrading from hexchat <=2.9.3 remember to rename"
-	elog "the xchat.conf file found in ~/.config/hexchat/ to hexchat.conf"
+	ewarn "If you're upgrading from hexchat <=2.9.3 remember to rename"
+	ewarn "the xchat.conf file found in ~/.config/hexchat/ to hexchat.conf"
 
 	gnome2_icon_cache_update
 }
