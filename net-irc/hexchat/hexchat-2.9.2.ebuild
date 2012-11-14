@@ -52,7 +52,7 @@ src_prepare() {
 	# QA: remove deprecated line from desktop file
 	sed -e '/Encoding=UTF-8/d' -i ${PN}.desktop || die 'sed failed'
 
-	./autogen.sh
+	./autogen.sh || die "autogen.sh failed"
 }
 
 src_configure() {
