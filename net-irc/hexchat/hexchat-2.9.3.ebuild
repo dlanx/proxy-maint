@@ -41,7 +41,8 @@ pkg_setup() {
 
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.9.1-input-box.patch \
-		"${FILESDIR}"/${PN}-2.9.3-cflags.patch
+		"${FILESDIR}"/${PN}-2.9.3-cflags.patch \
+		"${FILESDIR}"/${PN}-2.9.3-nogtk.patch
 
 	# use $libdir/hexchat/plugins as the plugin directory
 	if [[ $(get_libdir) != "lib" ]] ; then
