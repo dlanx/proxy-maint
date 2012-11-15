@@ -13,7 +13,7 @@ HOMEPAGE="http://www.hexchat.org/"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux"
-IUSE="dbus fastscroll +gtk ipv6 libnotify nls ntlm perl python spell ssl"
+IUSE="dbus fastscroll +gtk ipv6 libnotify libproxy nls ntlm perl +plugins python spell ssl threads"
 
 RDEPEND="dev-libs/glib:2
 	x11-libs/pango
@@ -24,6 +24,7 @@ RDEPEND="dev-libs/glib:2
 	perl? ( >=dev-lang/perl-5.8.0 )
 	python? ( =dev-lang/python-2* )
 	spell? ( app-text/gtkspell:2 )
+	libproxy? ( net-libs/libproxy )
 	ssl? ( >=dev-libs/openssl-0.9.8u )"
 DEPEND="${RDEPEND}
 	sys-devel/gettext
@@ -60,12 +61,19 @@ src_configure() {
 		$(use_enable ntlm) \
 		$(use_enable perl) \
 		$(use_enable python) \
-		$(use_enable spell spell gtkspell) \
+		$(use_enable spell spell static) \
 		$(use_enable ssl openssl) \
-		$(use_enable tcl) \
 		$(use_enable gtk gtkfe) \
 		$(use_enable !gtk textfe) \
-		$(use_enable fastscroll xft)
+		$(use_enable fastscroll xft) \
+		$(use_enable plugins plugin) \
+		$(use_enable plugins checksum) \
+		$(use_enable plugins doat) \
+		$(use_enable plugins fishlim) \
+		$(use_enable plugins sysinfo) \
+		$(use_enable libproxy) \
+		$(use_enable libproxy socks) \
+		$(use_enable threads)
 }
 
 src_install() {
