@@ -6,6 +6,9 @@ EAPI="4"
 PYTHON_DEPEND="2"
 PYTHON_USE_WITH="xml threads"
 
+IPXE_TARBALL_URL="http://dev.gentoo.org/~idella4/tarballs/ipxe.tar.gz"
+XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-0-20121121.tar.bz2"
+
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
 	REPO="xen-unstable.hg"
@@ -14,28 +17,22 @@ if [[ $PV == *9999 ]]; then
 	live_eclass="mercurial"
 else
 	KEYWORDS="~amd64 ~x86"
-	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz"
-# 	$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
+	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
+	$IPXE_TARBALL_URL
+	$XEN_SEABIOS_URL"
 	S="${WORKDIR}/xen-${PV}"
 fi
-
 inherit flag-o-matic eutils multilib python toolchain-funcs ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
-DOCS=( README docs/README.xen-bugtool docs/ChangeLog )
+DOCS=( README docs/README.xen-bugtool )
 
 LICENSE="GPL-2"
 SLOT="0"
 IUSE="api custom-cflags debug doc flask hvm qemu pygrub screen static-libs xend"
 
 REQUIRED_USE="hvm? ( qemu )"
-
-QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
-	/usr/share/xen/qemu/openbios-sparc64 \
-	/usr/share/xen/qemu/openbios-sparc32"
-QA_WX_LOAD=${QA_PRESTRIPPED}
 
 CDEPEND="<dev-libs/yajl-2
 	dev-python/lxml
@@ -86,8 +83,7 @@ RDEPEND="${CDEPEND}
 # hvmloader is used to bootstrap a fully virtualized kernel
 # Approved by QA team in bug #144032
 QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
-QA_EXECSTACK="usr/share/xen/qemu/openbios-sparc32
-	usr/share/xen/qemu/openbios-sparc64"
+
 RESTRICT="test"
 
 pkg_setup() {
@@ -129,11 +125,11 @@ pkg_setup() {
 }
 
 src_prepare() {
-#	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
 	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
 
 	# Drop .config
 	sed -e '/-include $(XEN_ROOT)\/.config/d' -i Config.mk || die "Couldn't drop"
+
 	# Xend
 	if ! use xend; then
 		sed -e 's:xm xen-bugtool xen-python-path xend:xen-bugtool xen-python-path:' \
@@ -182,19 +178,24 @@ src_prepare() {
 	# Fix network broadcast on bridged networks
 	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
 
-	# Prevent the downloading of ipxe
-#	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
-#		-e 's:^\tfi:#\tfi:' -i \
-#		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
-#		-i tools/firmware/etherboot/Makefile || die
+	# Prevent the downloading of ipxe, seabios
+	epatch "${FILESDIR}"/${P/-tools/}-anti-download.patch
+	cp $DISTDIR/ipxe.tar.gz tools/firmware/etherboot/ || die
+	mv ../seabios-dir-remote tools/firmware/ || die
+	pushd tools/firmware/ > /dev/null
+	ln -s seabios-dir-remote seabios-dir || die
+	popd > /dev/null
 
 	# Fix bridge by idella4, bug #362575
 	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
 
 	# Don't build ipxe with pie on hardened, Bug #360805
-#	if gcc-specs-pie; then
+	if gcc-specs-pie; then
 		epatch "${FILESDIR}/ipxe-nopie-4.2.0.patch"
-#	fi
+	fi
+
+	# Prevent double stripping of files at install
+	epatch "${FILESDIR}"/${P/-tools/}-nostrip.patch
 }
 
 src_compile() {
@@ -226,7 +227,6 @@ src_install() {
 	export CONFIG_LEAF_DIR=default
 
 	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
-	python_convert_shebangs -r 2 "${ED}"
 
 	# Remove RedHat-specific stuff
 	rm -rf "${ED}"/etc/init.d/xen* "${ED}"/etc/default || die
@@ -237,16 +237,15 @@ src_install() {
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
 
-#	dodoc README docs/README.xen-bugtool docs/ChangeLog
 	if use doc; then
 		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
 		dohtml -r docs/api/
 		docinto pdf
 		dodoc ${DOCS[@]}
-	#docs/api/tools/python/latex/refman.pdf
 		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
 	fi
+
 	rm -rf "${ED}"/usr/share/doc/xen/
 	doman docs/man?/*
 
@@ -271,7 +270,7 @@ src_install() {
 		rm -f ${ED}usr/$(get_libdir)/*.a ${ED}usr/$(get_libdir)/ocaml/*/*.a
 	fi
 
-	python_convert_shebangs -r 2 "${ED}"
+	#python_convert_shebangs -r 2 "${ED}"
 	# xend expects these to exist
 	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 
@@ -281,6 +280,12 @@ src_install() {
 	# Temp QA workaround
 	mkdir -p "${ED}"$(get_libdir)
 	mv "${ED}"etc/udev "${ED}"$(get_libdir)
+
+	# Remove files failing QA AFTER emake installs them, avoiding seeking absent files
+	rm -f $(find "${ED}" -name openbios-sparc32) \
+                $(find "${ED}" -name openbios-sparc64) \
+                $(find "${ED}" -name openbios-ppc) \
+                $(find "${ED}" -name palcode-clipper) || die
 }
 
 pkg_postinst() {
