@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=4
+EAPI=5
 
 inherit eutils gnome2
 
@@ -81,8 +81,7 @@ src_install() {
 	prune_libtool_files --all
 
 	# install plugin development header
-	insinto /usr/include/hexchat
-	doins src/common/hexchat-plugin.h
+	doheader src/common/hexchat-plugin.h
 
 	# remove useless desktop entry when gtk USE flag is unset
 	use gtk || rm "${ED}"/usr/share/applications -rf
