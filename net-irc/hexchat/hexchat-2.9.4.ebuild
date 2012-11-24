@@ -23,7 +23,7 @@ RDEPEND="dev-libs/glib:2
 	ntlm? ( net-libs/libntlm )
 	perl? ( >=dev-lang/perl-5.8.0 )
 	python? ( =dev-lang/python-2* )
-	spell? ( app-text/gtkspell:2 )
+	spell? ( dev-libs/libxml2 )
 	libproxy? ( net-libs/libproxy )
 	ssl? ( >=dev-libs/openssl-0.9.8u )"
 DEPEND="${RDEPEND}
