@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils gnome2
+inherit gnome2
 
 DESCRIPTION="Graphical IRC client based on XChat"
 SRC_URI="https://github.com/downloads/${PN}/${PN}/${P}.tar.xz"
@@ -46,7 +46,7 @@ src_prepare() {
 
 	# use $libdir/hexchat/plugins as the plugin directory
 	if [[ $(get_libdir) != "lib" ]] ; then
-		sed -e 's:${prefix}/lib/hexchat:${libdir}/hexchat:' \
+		sed -e 's:${prefix}/lib/${PN}:${libdir}/${PN}:' \
 			-i configure.ac || die 'sed failed'
 	fi
 
@@ -81,7 +81,7 @@ src_install() {
 	prune_libtool_files --all
 
 	# install plugin development header
-	doheader src/common/hexchat-plugin.h
+	doheader src/common/"${PN}"-plugin.h
 
 	# remove useless desktop entry when gtk USE flag is unset
 	use gtk || rm "${ED}"/usr/share/applications -rf
