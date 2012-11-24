@@ -191,11 +191,14 @@ src_prepare() {
 
 	# Don't build ipxe with pie on hardened, Bug #360805
 	if gcc-specs-pie; then
-		epatch "${FILESDIR}/ipxe-nopie-4.2.0.patch"
+		epatch "${FILESDIR}/ipxe-nopie.patch"
 	fi
 
 	# Prevent double stripping of files at install
 	epatch "${FILESDIR}"/${P/-tools/}-nostrip.patch
+
+	# fix jobserver in Makefile
+	epatch "${FILESDIR}"/${P/-tools/}-jserver.patch
 }
 
 src_compile() {

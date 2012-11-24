@@ -35,20 +35,3 @@ diff -ur xen-4.2.0.orig/tools/qemu-xen/Makefile.target xen-4.2.0/tools/qemu-xen/
  endif
  ifdef CONFIG_TRACE_SYSTEMTAP
  ifdef CONFIG_TRACE_SYSTEMTAP
-#diff -ur xen-4.2.0.orig/Makefile xen-4.2.0/Makefile
-#--- Makefile	2012-09-17 18:21:17.000000000 +0800
-#+++ Makefile	2012-11-22 09:09:45.080624651 +0800
-#@@ -62,11 +62,11 @@
-# 
-# .PHONY: install-xen
-# install-xen:
-#-	$(MAKE) -C xen install
-#+	+$(MAKE) -C xen install
-# 
-# .PHONY: install-tools
-# install-tools:
-#-	$(MAKE) -C tools install
-#+	+$(MAKE) -C tools install
-# 
-# ifeq ($(CONFIG_IOEMU),y)
-# install-tools: tools/qemu-xen-traditional-dir tools/qemu-xen-dir
