@@ -2,18 +2,18 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=4
+EAPI=5
 
-inherit eutils gnome2 versionator
+inherit gnome2
 
 DESCRIPTION="Graphical IRC client based on XChat"
-SRC_URI="https://github.com/downloads/hexchat/hexchat/${P}.tar.xz"
+SRC_URI="https://github.com/downloads/${PN}/${PN}/${P}.tar.xz"
 HOMEPAGE="http://www.hexchat.org/"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc x86"
-IUSE="dbus fastscroll +gtk ipv6 libnotify nls ntlm perl python spell ssl tcl"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux"
+IUSE="dbus fastscroll +gtk ipv6 libnotify libproxy nls ntlm perl +plugins python spell ssl threads"
 
 RDEPEND="dev-libs/glib:2
 	x11-libs/pango
@@ -23,35 +23,32 @@ RDEPEND="dev-libs/glib:2
 	ntlm? ( net-libs/libntlm )
 	perl? ( >=dev-lang/perl-5.8.0 )
 	python? ( =dev-lang/python-2* )
-	tcl? ( dev-lang/tcl )
-	spell? ( app-text/gtkspell:2 )
+	spell? ( dev-libs/libxml2 )
+	libproxy? ( net-libs/libproxy )
 	ssl? ( >=dev-libs/openssl-0.9.8u )"
 DEPEND="${RDEPEND}
 	sys-devel/gettext
 	virtual/pkgconfig"
 
-DOCS="ChangeLog README"
+DOCS="share/doc/changelog.md share/doc/readme.md"
 
-pkg_setup() {
-	# Added for to fix a sparc seg fault issue by Jason Wever <weeve@gentoo.org>
-	if [[ ${ARCH} = sparc ]] ; then
-		replace-flags "-O[3-9]" "-O2"
-	fi
-}
+# Phr33d0m: This has been most probably fixed already so we're getting rid of this code for now.
+#pkg_setup() {
+#	# Added for to fix a sparc seg fault issue by Jason Wever <weeve@gentoo.org>
+#	if [[ ${ARCH} = sparc ]] ; then
+#		replace-flags "-O[3-9]" "-O2"
+#	fi
+#}
 
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.9.1-input-box.patch \
-		"${FILESDIR}"/${PN}-2.9.3-cflags.patch \
-		"${FILESDIR}"/${PN}-2.9.3-nogtk.patch
+		"${FILESDIR}"/${PN}-2.9.3-cflags.patch
 
 	# use $libdir/hexchat/plugins as the plugin directory
 	if [[ $(get_libdir) != "lib" ]] ; then
-		sed -e 's:${prefix}/lib/hexchat:${libdir}/hexchat:' \
+		sed -e 's:${prefix}/lib/${PN}:${libdir}/${PN}:' \
 			-i configure.ac || die 'sed failed'
 	fi
-
-	# QA: remove deprecated line from desktop file
-	sed -e '/Encoding=UTF-8/d' -i ${PN}.desktop || die 'sed failed'
 
 	./autogen.sh || die "autogen.sh failed"
 }
@@ -64,12 +61,19 @@ src_configure() {
 		$(use_enable ntlm) \
 		$(use_enable perl) \
 		$(use_enable python) \
-		$(use_enable spell spell gtkspell) \
+		$(use_enable spell spell static) \
 		$(use_enable ssl openssl) \
-		$(use_enable tcl) \
 		$(use_enable gtk gtkfe) \
 		$(use_enable !gtk textfe) \
-		$(use_enable fastscroll xft)
+		$(use_enable fastscroll xft) \
+		$(use_enable plugins plugin) \
+		$(use_enable plugins checksum) \
+		$(use_enable plugins doat) \
+		$(use_enable plugins fishlim) \
+		$(use_enable plugins sysinfo) \
+		$(use_enable libproxy) \
+		$(use_enable libproxy socks) \
+		$(use_enable threads)
 }
 
 src_install() {
@@ -77,13 +81,10 @@ src_install() {
 	prune_libtool_files --all
 
 	# install plugin development header
-	insinto /usr/include/hexchat
-	doins src/common/xchat-plugin.h
+	doheader src/common/"${PN}"-plugin.h
 
 	# remove useless desktop entry when gtk USE flag is unset
-	if ! use gtk ; then
-		rm "${ED}"/usr/share/applications -rf
-	fi
+	use gtk || rm "${ED}"/usr/share/applications -rf
 }
 
 pkg_postinst() {
@@ -91,5 +92,9 @@ pkg_postinst() {
 		elog "You have disabled the gtk USE flag. This means you don't have"
 		elog "the GTK-GUI for HexChat but only a text interface called \"hexchat-text\"."
 	fi
+
+	ewarn "If you're upgrading from hexchat <=2.9.3 remember to rename"
+	ewarn "the xchat.conf file found in ~/.config/hexchat/ to hexchat.conf"
+
 	gnome2_icon_cache_update
 }
