@@ -18,7 +18,7 @@ SRC_URI="http://fcitx.googlecode.com/files/${P}.tar.xz
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
-IUSE="+cairo debug gtk gtk3 icu introspection lua opencc +pango qt4 snooper static-libs +table test +xml"
+IUSE="+cairo debug gtk gtk3 icu introspection lua nls opencc +pango qt4 snooper static-libs +table test +xml"
 
 RDEPEND="sys-apps/dbus
 	x11-libs/libX11
@@ -40,6 +40,7 @@ RDEPEND="sys-apps/dbus
 	icu? ( dev-libs/icu )
 	introspection? ( dev-libs/gobject-introspection )
 	lua? ( dev-lang/lua )
+	nls? ( sys-devel/gettext )
 	opencc? ( app-i18n/opencc )
 	qt4? (
 		x11-libs/qt-gui:4
@@ -84,8 +85,6 @@ src_prepare() {
 		cp "${DISTDIR}/table.tar.gz" "${S}/data/table" \
 			|| die "table data file is not found"
 	fi
-	epatch "${FILESDIR}/${P}-offline.patch"
-	sed -e "s/20120815/${_en_dict_version}/" -i data/CMakeLists.txt || die 'sed failed'
 	epatch_user
 }
 
@@ -99,8 +98,10 @@ src_configure() {
 		$(cmake-utils_use_enable icu ICU)
 		$(cmake-utils_use_enable introspection GIR)
 		$(cmake-utils_use_enable lua LUA)
+		$(cmake-utils_use_enable nls GETTEXT)
 		$(cmake-utils_use_enable opencc OPENCC)
 		$(cmake-utils_use_enable pango PANGO)
+		$(cmake-utils_use_enable qt4 QT)
 		$(cmake-utils_use_enable qt4 QT_IM_MODULE)
 		$(cmake-utils_use_enable snooper SNOOPER)
 		$(cmake-utils_use_enable static-libs STATIC)
