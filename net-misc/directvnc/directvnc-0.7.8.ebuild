@@ -25,8 +25,6 @@ DEPEND="${RDEPEND}
 	>=sys-apps/sed-4
 	x11-proto/xproto"
 
-DOCS="AUTHORS changelog NEWS README THANKS"
-
 src_prepare() {
 	use mouse || epatch "${FILESDIR}"/${P}-mouse.patch
 	autotools-utils_src_prepare
