@@ -17,7 +17,7 @@ SLOT="0"
 KEYWORDS="~x86 ~amd64"
 IUSE="+mouse"
 
-RDEPEND="dev-libs/DirectFB
+RDEPEND="dev-libs/DirectFB[fbcon]
 	virtual/jpeg"
 
 DEPEND="${RDEPEND}
