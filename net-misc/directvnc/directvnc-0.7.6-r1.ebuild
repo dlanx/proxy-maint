@@ -1,6 +1,8 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /data/temp/gentoo//vcs-public-cvsroot/gentoo-x86/net-misc/directvnc/directvnc-0.7.6.ebuild,v 1.3 2012/05/05 03:20:44 jdhore Exp $
+
+EAPI=5
 
 inherit eutils
 
@@ -11,9 +13,9 @@ SRC_URI="http://github.com/downloads/drinkmilk/${PN}/${P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~ppc ~amd64"
-IUSE="mouse"
+IUSE="+mouse"
 
-RDEPEND="dev-libs/DirectFB
+RDEPEND="dev-libs/DirectFB[fbcon]
 	virtual/jpeg"
 
 DEPEND="${RDEPEND}
@@ -21,27 +23,13 @@ DEPEND="${RDEPEND}
 	>=sys-apps/sed-4
 	x11-proto/xproto"
 
-src_unpack() {
-	unpack ${A}
-
+src_prepare() {
 	# Make mouse support optional
-	cd "${S}/src"
-	use mouse || epatch "${FILESDIR}/${PN}-mouse.patch"
-}
-
-src_compile() {
-	econf || die
-
-	# Fix bug #116148, DFBGraphicsDeviceDescription is no longer present in
-	# newer DirectFB version, but the application never uses it :-/
-	local comment_out="DFBCardCapabilities caps;"
-	sed -i -e "s:${comment_out}://${comment_out}:" src/dfb.c
-
-	emake DEBUGFLAGS="${CFLAGS}" AM_LDFLAGS="${LDFLAGS}" || die
+	use mouse || epatch "${FILESDIR}/${P}-mouse.patch"
 }
 
 src_install() {
-	make install DESTDIR="${D}" || die
-	rm -rf "${D}/usr/doc"
+	make install DESTDIR="${D}"
+	rm -rf "${D}/usr/share/doc"
 	dodoc AUTHORS ChangeLog NEWS README THANKS TODO
 }
