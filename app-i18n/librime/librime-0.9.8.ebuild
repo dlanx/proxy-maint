@@ -2,13 +2,13 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header$
 
-EAPI=4
+EAPI=5
 
-inherit cmake-utils multilib vcs-snapshot
+inherit cmake-utils multilib
 
 DESCRIPTION="Rime Input Method Engine library"
 HOMEPAGE="http://code.google.com/p/rimeime/"
-SRC_URI="https://github.com/lotem/${PN}/tarball/rime-${PV} -> ${P}.tar.gz"
+SRC_URI="http://rimeime.googlecode.com/files/${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -23,6 +23,8 @@ RDEPEND="app-i18n/opencc
 	sys-libs/zlib
 	x11-proto/xproto"
 DEPEND="${RDEPEND}"
+
+S=${WORKDIR}/${PN}
 
 src_configure() {
 	local mycmakeargs=(
