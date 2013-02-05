@@ -19,7 +19,7 @@ COMMON_DEPEND="app-i18n/ibus
 DEPEND="${COMMON_DEPEND}
 	dev-util/cmake"
 RDEPEND="${COMMON_DEPEND}
-	app-i18n/brise"
+	app-i18n/rime-data"
 
 S=${WORKDIR}/${PN}
 
