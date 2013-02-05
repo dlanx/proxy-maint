@@ -7,8 +7,4 @@
     <email>dennis.yxun@gmail.com</email>
     <name>Lan Yixun (dlan)</name>
   </maintainer>
-  <upstream>
-    <bugs-to>http://code.google.com/p/rimeime/issues/list</bugs-to>
-    <remote-id type="google-code">rimeime</remote-id>
-  </upstream>
 </pkgmetadata>
