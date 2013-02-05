@@ -26,7 +26,6 @@ DEPEND="${DEPEND}
 
 src_configure() {
 	econf \
-		--datadir=/usr/share/ibus-pinyin \
 		$(use_enable boost) \
 		$(use_enable opencc) \
 		$(use_enable db db-android)

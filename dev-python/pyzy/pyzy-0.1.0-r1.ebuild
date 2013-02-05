@@ -25,6 +25,7 @@ DEPEND="${DEPEND}
 	doc? ( app-doc/doxygen )"
 
 src_prepare() {
+	epatch "${FILESDIR}"/${P}-db.patch
 	eautoreconf
 }
 
