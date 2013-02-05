@@ -1,13 +1,13 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Header$
 
-EAPI=4
+EAPI=5
 
 inherit cmake-utils
 
-DESCRIPTION="Rime Support for Fcitx"
-HOMEPAGE="http://code.google.com/p/rimeime/"
+DESCRIPTION="Rime support for Fcitx"
+HOMEPAGE="http://fcitx-im.org/"
 SRC_URI="https://fcitx.googlecode.com/files/${P}.tar.xz"
 
 LICENSE="GPL-2"
@@ -17,7 +17,7 @@ IUSE=""
 
 RDEPEND=">=app-i18n/fcitx-4.2.7
 	app-i18n/librime
-	app-i18n/rime-data
+	app-i18n/brise
 	x11-libs/libnotify"
 DEPEND="${RDEPEND}"
 
