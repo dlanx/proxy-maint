@@ -27,6 +27,8 @@ DEPEND="${RDEPEND}
 	>=sys-apps/sed-4
 	x11-proto/xproto"
 
+DOCS=( AUTHORS changelog NEWS README THANKS )
+
 src_prepare() {
 	use mouse || epatch "${FILESDIR}"/${P}-mouse.patch
 	autotools-utils_src_prepare
@@ -34,7 +36,5 @@ src_prepare() {
 
 src_install() {
 	autotools-utils_src_install
-	# default install goes to /usr/share/doc/${PN}, make it to ${P}
-	rm -rf "${D}/usr/share/doc"
-	dodoc AUTHORS changelog NEWS README THANKS
+	rm -rf "${D}/usr/share/doc/${PN}" || die
 }
