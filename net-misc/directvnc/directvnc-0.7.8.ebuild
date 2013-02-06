@@ -4,6 +4,8 @@
 
 EAPI=5
 
+
+AUTOTOOLS_IN_SOURCE_BUILD=1
 AUTOTOOLS_AUTORECONF=1
 
 inherit eutils autotools-utils
