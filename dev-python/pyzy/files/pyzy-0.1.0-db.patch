@@ -1,0 +1,39 @@
+diff --git a/data/db/Makefile.am b/data/db/Makefile.am
+index eb1ef61..0ebef26 100644
+--- a/data/db/Makefile.am
++++ b/data/db/Makefile.am
+@@ -22,7 +22,7 @@
+ main_db_DATA = \
+ 	create_index.sql \
+ 	$(NULL)
+-main_dbdir = $(pkgdatadir)/db
++main_dbdir = /usr/share/ibus-pinyin/db
+ 
+ EXTRA_DIST = \
+ 	create_index.sql \
+diff --git a/data/db/android/Makefile.am b/data/db/android/Makefile.am
+index f276ac5..8911154 100644
+--- a/data/db/android/Makefile.am
++++ b/data/db/android/Makefile.am
+@@ -34,7 +34,7 @@ if PYZY_BUILD_DB_ANDROID
+ main_db_DATA = \
+ 	android.db \
+ 	$(NULL)
+-main_dbdir = $(pkgdatadir)/db
++main_dbdir = /usr/share/ibus-pinyin/db
+ endif
+ 
+ android.db: $(android_raw_data) $(create_scripts)
+diff --git a/data/db/open-phrase/Makefile.am b/data/db/open-phrase/Makefile.am
+index 6cf2ed3..d806ec5 100644
+--- a/data/db/open-phrase/Makefile.am
++++ b/data/db/open-phrase/Makefile.am
+@@ -24,7 +24,7 @@ db_file = open-phrase.db
+ main_db_DATA = \
+ 	db/$(db_file) \
+ 	$(NULL)
+-main_dbdir = $(pkgdatadir)/db
++main_dbdir = /usr/share/ibus-pinyin/db
+ 
+ DBVER = 1.0.0
+ DBTAR = pyzy-database-$(DBVER).tar.bz2
