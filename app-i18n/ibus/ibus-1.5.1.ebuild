@@ -72,6 +72,10 @@ pkg_setup() {
 }
 
 src_prepare() {
+	# backport upstream patch, see #449550
+	epatch ${FILESDIR}/${P}-use-unpack.patch
+	epatch ${FILESDIR}/${P}-queue-events.patch
+
 	# We run "dconf update" in pkg_postinst/postrm to avoid sandbox violations
 	sed -e 's/dconf update/$(NULL)/' \
 		-i data/dconf/Makefile.{am,in} || die
