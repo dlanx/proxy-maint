@@ -15,8 +15,7 @@ SRC_URI="
 		$XEN_EXTFILES_URL/zlib-1.2.3.tar.gz
 		$LIBPCI_URL/pciutils-2.2.9.tar.bz2
 		$XEN_EXTFILES_URL/lwip-1.3.0.tar.gz
-		$XEN_EXTFILES_URL/newlib/newlib-1.16.0.tar.gz
-		"
+		$XEN_EXTFILES_URL/newlib/newlib-1.16.0.tar.gz"
 
 S="${WORKDIR}/xen-${PV}"
 
@@ -67,6 +66,10 @@ src_prepare() {
 		$DISTDIR/newlib-1.16.0.tar.gz \
 		$DISTDIR/grub-0.97.tar.gz \
 		./stubdom/ || die "files not coped to stubdom"
+	cp "${FILESDIR}"/newlib-implicits.patch stubdom || die
+#	cp "${WORKDIR}"/patch/{00[3-6]_all_grub*,010_all_grub*,01[3-9]_all_grub*,0[6-7]0_all_grub*} \
+#		"${WORKDIR}"/patch/{110_all_grub*,300_all_grub*} \
+#		 stubdom/grub.patches/ || die
 
 	einfo "files copied to stubdom"
 
@@ -76,6 +79,9 @@ src_prepare() {
 		-e 's:^\t$(WGET) $(LIBPCI_URL):#\t$(WGET) $(LIBPCI_URL):' \
 		-e 's:^\t$(WGET) $(GRUB_URL):#$(WGET) $(GRUB_URL):' \
                 -i stubdom/Makefile || die "stubdom/Makefile could not be adjusted"
+
+#	cat ${FILESDIR}/implicits.patch >> stubdom/newlib-chk.patch || die
+	epatch "${FILESDIR}"/xen-${PV}-newlib.patch || die
 }
 
 src_compile() {
