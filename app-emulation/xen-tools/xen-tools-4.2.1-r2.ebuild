@@ -1,10 +1,14 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.1.2-r2.ebuild,v 1.3 2012/01/12 13:40:01 alexxy Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.2.1-r2.ebuild,v 1.5 2013/02/12 06:34:04 idella4 Exp $
 
-EAPI="4"
-PYTHON_DEPEND="2"
-PYTHON_USE_WITH="xml threads"
+EAPI=5
+
+PYTHON_COMPAT=( python{2_6,2_7} )
+PYTHON_REQ_USE='xml,threads'
+
+IPXE_TARBALL_URL="http://dev.gentoo.org/~idella4/tarballs/ipxe.tar.gz"
+XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-0-20121121.tar.bz2"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -14,43 +18,41 @@ if [[ $PV == *9999 ]]; then
 	live_eclass="mercurial"
 else
 	KEYWORDS="~amd64 ~x86"
-	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz \
-	$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
+	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
+	$IPXE_TARBALL_URL
+	$XEN_SEABIOS_URL"
 	S="${WORKDIR}/xen-${PV}"
 fi
 
-inherit flag-o-matic eutils multilib python toolchain-funcs ${live_eclass}
+inherit flag-o-matic eutils multilib python-single-r1 toolchain-funcs udev ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
-DOCS=( README docs/README.xen-bugtool docs/ChangeLog )
+DOCS=( README docs/README.xen-bugtool )
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="api custom-cflags debug doc flask hvm qemu pygrub screen xend"
+IUSE="api custom-cflags debug doc flask hvm qemu ocaml pygrub screen static-libs xend"
 
 REQUIRED_USE="hvm? ( qemu )"
 
-QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
-	/usr/share/xen/qemu/openbios-sparc64 \
-	/usr/share/xen/qemu/openbios-sparc32"
-QA_WX_LOAD=${QA_PRESTRIPPED}
-
 CDEPEND="<dev-libs/yajl-2
-	dev-python/lxml
-	dev-python/pypam
-	dev-python/pyxml
+	dev-python/lxml[${PYTHON_USEDEP}]
+	dev-python/pypam[${PYTHON_USEDEP}]
 	sys-libs/zlib
-	hvm? ( media-libs/libsdl
-		sys-power/iasl )
-	api? ( dev-libs/libxml2 net-misc/curl )"
-
+	sys-power/iasl
+	ocaml? ( dev-ml/findlib )
+	hvm? ( media-libs/libsdl )
+	${PYTHON_DEPS}
+	api? ( dev-libs/libxml2
+		net-misc/curl )
+	${PYTHON_DEPS}
+	pygrub? ( ${PYTHON_DEPS//${PYTHON_REQ_USE}/ncurses} )"
 DEPEND="${CDEPEND}
-	sys-devel/gcc
+	sys-devel/bin86
+	sys-devel/dev86
 	dev-lang/perl
 	app-misc/pax-utils
-	dev-ml/findlib
 	doc? (
 		app-doc/doxygen
 		dev-tex/latex2html[png,gif]
@@ -64,33 +66,31 @@ DEPEND="${CDEPEND}
 		dev-texlive/texlive-pictures
 		dev-texlive/texlive-latexrecommended
 	)
-	hvm? (
-		x11-proto/xproto
-		sys-devel/dev86
-	)	pygrub? ( dev-lang/python[ncurses] )
-	"
-
+	hvm? (  x11-proto/xproto
+	)"
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
 	net-misc/bridge-utils
-	>=dev-lang/ocaml-3.12.0
+	ocaml? ( >=dev-lang/ocaml-3.12.0 )
 	screen? (
 		app-misc/screen
 		app-admin/logrotate
 	)
-	|| ( sys-fs/udev sys-apps/hotplug )"
+	virtual/udev"
 
 # hvmloader is used to bootstrap a fully virtualized kernel
 # Approved by QA team in bug #144032
 QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
-QA_EXECSTACK="usr/share/xen/qemu/openbios-sparc32
-	usr/share/xen/qemu/openbios-sparc64"
+
 RESTRICT="test"
 
 pkg_setup() {
-	python_set_active_version 2
-	python_pkg_setup
+	python-single-r1_pkg_setup
 	export "CONFIG_LOMOUNT=y"
+
+	if has_version dev-libs/libgcrypt; then
+		export "CONFIG_GCRYPT=y"
+	fi
 
 	if use qemu; then
 		export "CONFIG_IOEMU=y"
@@ -122,30 +122,30 @@ pkg_setup() {
 }
 
 src_prepare() {
-	cp "$DISTDIR/ipxe-git-v1.0.0.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
-	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
+	# Drop .config, fixes to gcc-4.6
+	epatch "${FILESDIR}"/${PN/-tools/}-4-fix_dotconfig-gcc.patch
 
-	# Drop .config
-	sed -e '/-include $(XEN_ROOT)\/.config/d' -i Config.mk || die "Couldn't drop"
 	# Xend
 	if ! use xend; then
 		sed -e 's:xm xen-bugtool xen-python-path xend:xen-bugtool xen-python-path:' \
-			-i tools/misc/Makefile || die "Disabling xend failed" || die
+			-i tools/misc/Makefile || die "Disabling xend failed"
 		sed -e 's:^XEND_INITD:#XEND_INITD:' \
-			-i tools/examples/Makefile || "Disabling xend failed" || die
+			-i tools/examples/Makefile || die "Disabling xend failed"
 	fi
+
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
 
-	# try and remove all the default custom-cflags
-	find "${S}" -name Makefile -o -name Rules.mk -o -name Config.mk -exec sed \
-		-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-march=i686\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
-		-i {} \; || die "failed to re-set custom-cflags"
+		# try and remove all the default cflags
+		find "${S}" \( -name Makefile -o -name Rules.mk -o -name Config.mk \) \
+			-exec sed \
+				-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-march=i686\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
+				-i {} + || die "failed to re-set custom-cflags"
 	fi
 
 	if ! use pygrub; then
@@ -154,7 +154,6 @@ src_prepare() {
 
 	# Disable hvm support on systems that don't support x86_32 binaries.
 	if ! use hvm; then
-		chmod 644 tools/check/check_x11_devel
 		sed -e '/^CONFIG_IOEMU := y$/d' -i config/*.mk || die
 		sed -e '/SUBDIRS-$(CONFIG_X86) += firmware/d' -i tools/Makefile || die
 	fi
@@ -165,36 +164,41 @@ src_prepare() {
 		sed -e "s:install-tools\: tools/ioemu-dir:install-tools\: :g" -i Makefile || die
 	fi
 
-	# Fix build for gcc-4.6
-	sed -e "s:-Werror::g" -i  tools/xenstat/xentop/Makefile || die
+	# Fix texi2html build error with new texi2html
+	epatch "${FILESDIR}"/${PN}-4-docfix.patch
 
 	# Fix network broadcast on bridged networks
 	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
 
-	# Do not strip binaries
-	epatch "${FILESDIR}/${PN}-3.3.0-nostrip.patch"
-
-	# Prevent the downloading of ipxe
-	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
-		-e 's:^\tfi:#\tfi:' -i \
-		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
-		-i tools/firmware/etherboot/Makefile || die
+	# Prevent the downloading of ipxe, seabios
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-anti-download.patch
+	cp "${DISTDIR}"/ipxe.tar.gz tools/firmware/etherboot/ || die
+	mv ../seabios-dir-remote tools/firmware/ || die
+	pushd tools/firmware/ > /dev/null
+	ln -s seabios-dir-remote seabios-dir || die
+	popd > /dev/null
 
 	# Fix bridge by idella4, bug #362575
 	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
 
-	# Remove check_curl, new fix to Bug #386487
-	epatch "${FILESDIR}/${PN}-4.1.1-curl.patch"
-	sed -i -e 's|has_or_fail curl-config|has_or_fail curl-config\nset -ux|' \
-		tools/check/check_curl || die
-
 	# Don't build ipxe with pie on hardened, Bug #360805
 	if gcc-specs-pie; then
-		epatch "${FILESDIR}/ipxe-nopie.patch"
+		epatch "${FILESDIR}"/ipxe-nopie.patch
 	fi
 
-	# Fix create.py for pyxml Bug 367735
-	epatch "${FILESDIR}/xen-tools-4.1.2-pyxml.patch"
+	# Prevent double stripping of files at install
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-nostrip.patch
+
+	# fix jobserver in Makefile
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-jserver.patch
+
+	#Sec patch, currently valid
+	epatch "${FILESDIR}"/xen-4-CVE-2012-6075-XSA-41.patch
+
+	if use hvm; then
+		cp -r "${FILESDIR}"/stubs-32.h xen/tools/include || die "copy of header file failed"
+		einfo "stubs-32.h added"
+	fi
 }
 
 src_compile() {
@@ -208,27 +212,30 @@ src_compile() {
 	fi
 
 	unset LDFLAGS
-	emake CC=$(tc-getCC) LD=$(tc-getLD) -C tools ${myopt}
+	unset CFLAGS
+	emake CC="$(tc-getCC)" LD="$(tc-getLD)" -C tools ${myopt}
 
-	if use doc; then
-		sh ./docs/check_pkgs || die "package check failed"
-		emake docs
-		emake dev-docs
-	fi
-
+	use doc && emake -C docs txt html
 	emake -C docs man-pages
 }
 
 src_install() {
 	# Override auto-detection in the build system, bug #382573
-	export INITD_DIR=/etc/init.d
-	export CONFIG_LEAF_DIR=default
+	export INITD_DIR=/tmp/init.d
+	export CONFIG_LEAF_DIR=../tmp/default
 
-	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
-	python_convert_shebangs -r 2 "${ED}"
+	# Let the build system compile installed Python modules.
+	local PYTHONDONTWRITEBYTECODE
+	export PYTHONDONTWRITEBYTECODE
+
+	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-tools
+#		XEN_PYTHON_NATIVE_INSTALL=y install-tools
+
+	# Fix the remaining Python shebangs.
+	python_fix_shebang "${D}"
 
 	# Remove RedHat-specific stuff
-	rm -rf "${ED}"/etc/init.d/xen* "${ED}"/etc/default || die
+	rm -rf "${D}"tmp || die
 
 	# uncomment lines in xl.conf
 	sed -e 's:^#autoballoon=1:autoballoon=1:' \
@@ -236,17 +243,16 @@ src_install() {
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
 
-#	dodoc README docs/README.xen-bugtool docs/ChangeLog
 	if use doc; then
-		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
+		emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
-		dohtml -r docs/api/
+		dohtml -r docs/
 		docinto pdf
 		dodoc ${DOCS[@]}
-	#docs/api/tools/python/latex/refman.pdf
-		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
+		[ -d "${D}"/usr/share/doc/xen ] && mv "${D}"/usr/share/doc/xen/* "${D}"/usr/share/doc/${PF}/html
 	fi
-	rm -rf "${ED}"/usr/share/doc/xen/
+
+	rm -rf "${D}"/usr/share/doc/xen/
 	doman docs/man?/*
 
 	if use xend; then
@@ -260,17 +266,35 @@ src_install() {
 	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
 
 	if use screen; then
-		cat "${FILESDIR}"/xendomains-screen.confd >> "${ED}"/etc/conf.d/xendomains || die
-		cp "${FILESDIR}"/xen-consoles.logrotate "${ED}"/etc/xen/ || die
+		cat "${FILESDIR}"/xendomains-screen.confd >> "${D}"/etc/conf.d/xendomains || die
+		cp "${FILESDIR}"/xen-consoles.logrotate "${D}"/etc/xen/ || die
 		keepdir /var/log/xen-consoles
 	fi
 
-	python_convert_shebangs -r 2 "${ED}"
+	if use qemu; then
+		mkdir -p "${D}"usr/lib64/xen/bin || die
+		mv "${D}"usr/lib/xen/bin/qemu* "${D}"usr/lib64/xen/bin/ || die
+	fi
+
+	# For -static-libs wrt Bug 384355
+	if ! use static-libs; then
+		rm -f "${D}"usr/$(get_libdir)/*.a "${D}"usr/$(get_libdir)/ocaml/*/*.a
+	fi
+
 	# xend expects these to exist
 	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 
 	# for xendomains
 	keepdir /etc/xen/auto
+
+	# Temp QA workaround
+	dodir "$(udev_get_udevdir)"
+	mv "${D}"/etc/udev/* "${D}/$(udev_get_udevdir)"
+	rm -rf "${D}"/etc/udev
+
+	# Remove files failing QA AFTER emake installs them, avoiding seeking absent files
+	find "${D}" \( -name openbios-sparc32 -o -name openbios-sparc64 \
+		-o -name openbios-ppc -o -name palcode-clipper \) -delete || die
 }
 
 pkg_postinst() {
@@ -278,13 +302,14 @@ pkg_postinst() {
 	elog " http://www.gentoo.org/doc/en/xen-guide.xml"
 	elog " http://gentoo-wiki.com/HOWTO_Xen_and_Gentoo"
 
-	if [[ "$(scanelf -s __guard -q $(type -P python))" ]] ; then
+	if [[ "$(scanelf -s __guard -q "${PYTHON}")" ]] ; then
 		echo
 		ewarn "xend may not work when python is built with stack smashing protection (ssp)."
 		ewarn "If 'xm create' fails with '<ProtocolError for /RPC2: -1 >', see bug #141866"
-		ewarn "This probablem may be resolved as of Xen 3.0.4, if not post in the bug."
+		ewarn "This problem may be resolved as of Xen 3.0.4, if not post in the bug."
 	fi
 
+	# TODO: we need to have the current Python slot here.
 	if ! has_version "dev-lang/python[ncurses]"; then
 		echo
 		ewarn "NB: Your dev-lang/python is built without USE=ncurses."
@@ -316,9 +341,4 @@ pkg_postinst() {
 		elog "xensv is broken upstream (Gentoo bug #142011)."
 		elog "Please remove '${ROOT%/}/etc/conf.d/xend', as it is no longer needed."
 	fi
-	python_mod_optimize $(use pygrub && echo grub) xen
-}
-
-pkg_postrm() {
-	python_mod_cleanup $(use pygrub && echo grub) xen
 }
