@@ -8,7 +8,7 @@
 	</maintainer>
 	<maintainer>
 		<email>spookyghost@blueyonder.co.uk</email>
-		<name>unknown atm</name>
+		<name>James Dingwall</name>
 	</maintainer>
 	<use>
 		<flag name='custom-cflags'>Build with user-specified CFLAGS</flag>	
