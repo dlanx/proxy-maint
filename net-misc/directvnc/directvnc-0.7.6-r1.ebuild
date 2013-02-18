@@ -4,7 +4,10 @@
 
 EAPI=5
 
-inherit eutils
+AUTOTOOLS_IN_SOURCE_BUILD=1
+AUTOTOOLS_AUTORECONF=1
+
+inherit eutils autotools-utils
 
 DESCRIPTION="Very thin VNC client for unix framebuffer systems"
 HOMEPAGE="http://drinkmilk.github.com/directvnc/"
@@ -23,13 +26,11 @@ DEPEND="${RDEPEND}
 	>=sys-apps/sed-4
 	x11-proto/xproto"
 
+DOCS=( NEWS THANKS )
+
 src_prepare() {
 	# Make mouse support optional
 	use mouse || epatch "${FILESDIR}/${P}-mouse.patch"
-}
-
-src_install() {
-	make install DESTDIR="${D}"
-	rm -rf "${D}/usr/share/doc"
-	dodoc AUTHORS ChangeLog NEWS README THANKS TODO
+	sed -i -e 's|$(prefix)/share/doc/@PACKAGE@|@docdir@|g' Makefile.am || die
+	autotools-utils_src_prepare
 }
