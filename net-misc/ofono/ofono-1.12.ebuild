@@ -1,8 +1,8 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/net-misc/ofono/ofono-1.10.ebuild,v 1.2 2012/12/03 02:28:30 ssuominen Exp $
 
-EAPI="2"
+EAPI=5
 
 inherit eutils multilib systemd
 
@@ -24,6 +24,8 @@ RDEPEND=">=sys-apps/dbus-1.4
 	tools? ( virtual/libusb:1 )"
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
+
+DOCS=( ChangeLog AUTHORS )
 
 src_prepare() {
 	default
@@ -50,16 +52,16 @@ src_configure() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
+	default
 
 	if ! use examples ; then
-		rm -rf "${D}/usr/$(get_libdir)/ofono/test"
+		rm -rf "${D}/usr/$(get_libdir)/ofono/test" || die
 	fi
 
 	if use tools ; then
-		dobin tools/{auto-enable,huawei-audio} || die
+		dobin tools/{auto-enable,huawei-audio}
 	fi
 
-	newinitd "${FILESDIR}"/${PN}.initd ${PN} || die
-	dodoc ChangeLog AUTHORS doc/*.txt
+	newinitd "${FILESDIR}"/${PN}.initd ${PN}
+	dodoc doc/*.txt
 }
