@@ -16,12 +16,13 @@ SRC_URI="http://github.com/downloads/drinkmilk/${PN}/${P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~ppc ~amd64"
-IUSE="+mouse"
+IUSE="+mouse dmalloc"
 
 RDEPEND="dev-libs/DirectFB[fbcon]
 	virtual/jpeg"
 
 DEPEND="${RDEPEND}
+	dmalloc? ( dev-libs/dmalloc )
 	virtual/pkgconfig
 	>=sys-apps/sed-4
 	x11-proto/xproto"
@@ -33,4 +34,12 @@ src_prepare() {
 	use mouse || epatch "${FILESDIR}/${P}-mouse.patch"
 	sed -i -e 's|$(prefix)/share/doc/@PACKAGE@|@docdir@|g' Makefile.am || die
 	autotools-utils_src_prepare
+}
+
+src_configure() {
+	myeconfargs=(
+		$(use_with dmalloc)
+	)
+
+	autotools-utils_src_configure
 }
