@@ -29,7 +29,10 @@ DOCS=( ChangeLog AUTHORS )
 
 src_prepare() {
 	default
-	epatch "${FILESDIR}"/${P}-header.patch
+	# backport upstream patches
+	epatch "${FILESDIR}"/${P}-sys-types.patch
+	epatch "${FILESDIR}"/${P}-automake-header.patch
+	epatch "${FILESDIR}"/${P}-automake-cppflags.patch
 	# Fix build with newer glib due to G_DISABLE_SINGLE_INCLUDES
 	grep -lre '<glib/gtypes.h>' "${S}" | while read i; do
 		sed -ie 's:glib/gtypes.h:glib.h:' "${i}" || die "Unable to sed \"$i\""
