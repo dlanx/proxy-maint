@@ -4,7 +4,6 @@
 
 EAPI=5
 
-
 AUTOTOOLS_IN_SOURCE_BUILD=1
 AUTOTOOLS_AUTORECONF=1
 
@@ -27,14 +26,10 @@ DEPEND="${RDEPEND}
 	>=sys-apps/sed-4
 	x11-proto/xproto"
 
-DOCS=( AUTHORS changelog NEWS README THANKS )
+DOCS=( NEWS THANKS )
 
 src_prepare() {
 	use mouse || epatch "${FILESDIR}"/${P}-mouse.patch
+	sed -i -e 's|$(prefix)/share/doc/@PACKAGE@|@docdir@|g' Makefile.am || die
 	autotools-utils_src_prepare
-}
-
-src_install() {
-	autotools-utils_src_install
-	rm -rf "${D}/usr/share/doc/${PN}" || die
 }
