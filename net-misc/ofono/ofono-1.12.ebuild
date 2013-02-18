@@ -13,7 +13,7 @@ SRC_URI="mirror://kernel/linux/network/${PN}/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="+atmodem bluetooth +cdmamodem examples +isimodem +phonesim threads tools +udev"
+IUSE="+atmodem bluetooth +cdmamodem doc examples +isimodem +phonesim threads tools +udev"
 
 RDEPEND=">=sys-apps/dbus-1.4
 	>=dev-libs/glib-2.28
@@ -63,5 +63,5 @@ src_install() {
 	fi
 
 	newinitd "${FILESDIR}"/${PN}.initd ${PN}
-	dodoc doc/*.txt
+	use doc && dodoc doc/*.txt
 }
