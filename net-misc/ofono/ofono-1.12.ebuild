@@ -13,7 +13,8 @@ SRC_URI="mirror://kernel/linux/network/${PN}/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="+atmodem bluetooth +cdmamodem doc examples +isimodem +phonesim threads tools +udev"
+IUSE="+atmodem bluetooth +cdmamodem doc examples +isimodem +phonesim threads
+test tools +udev"
 
 RDEPEND=">=sys-apps/dbus-1.4
 	>=dev-libs/glib-2.28
@@ -49,7 +50,7 @@ src_configure() {
 		$(use_enable bluetooth) \
 		$(use_enable phonesim) \
 		$(use_enable tools) \
-		--enable-test \
+		$(use_enable test) \
 		--localstatedir=/var \
 		--with-systemdunitdir="$(systemd_get_unitdir)"
 }
