@@ -30,6 +30,8 @@ src_prepare() {
 	epatch "${FILESDIR}/4.01-gentoo.patch"
 	# bug #411847
 	epatch "${FILESDIR}/${PN}-pc.patch"
+	# bug 429526
+	epatch "${FILESDIR}/${P}-gentoo.patch"
 
 	eautoreconf
 }
