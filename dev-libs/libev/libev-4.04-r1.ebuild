@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/dev-libs/libev/libev-4.04.ebuild,v 1.6 2011/08/29 06:37:46 jer Exp $
 
-EAPI="3"
+EAPI=5
 
 inherit autotools eutils multilib
 
@@ -24,6 +24,8 @@ RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/${MY_P}"
 
+DOCS=( Changes README )
+
 src_prepare() {
 	epatch "${FILESDIR}/4.01-gentoo.patch"
 
@@ -32,12 +34,6 @@ src_prepare() {
 
 src_configure() {
 	econf $(use_enable static-libs static)
-}
-
-src_install() {
-	emake DESTDIR="${D}" install || die
-
-	dodoc Changes README || die
 }
 
 pkg_preinst() {
