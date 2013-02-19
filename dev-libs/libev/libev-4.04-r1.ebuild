@@ -36,6 +36,11 @@ src_configure() {
 	econf $(use_enable static-libs static)
 }
 
+src_install() {
+	default
+	prune_libtool_files
+}
+
 pkg_preinst() {
 	preserve_old_lib /usr/$(get_libdir)/libev.so.3.0.0
 }
