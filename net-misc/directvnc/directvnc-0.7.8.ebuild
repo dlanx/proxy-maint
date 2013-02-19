@@ -45,3 +45,8 @@ src_configure() {
 
 	autotools-utils_src_configure
 }
+
+pkg_postinst() {
+	einfo "To customize your keyboard mapping, please consult the manual"
+	einfo " commmand: man 7 directvnc-kbmapping"
+}
