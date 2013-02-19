@@ -28,6 +28,7 @@ DOCS=( Changes README )
 
 src_prepare() {
 	epatch "${FILESDIR}/4.01-gentoo.patch"
+	epatch "${FILESDIR}/${P}-gentoo.patch"
 
 	eautoreconf
 }
