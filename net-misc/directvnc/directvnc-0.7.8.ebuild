@@ -18,7 +18,7 @@ SLOT="0"
 KEYWORDS="~x86 ~amd64"
 IUSE="+mouse dmalloc"
 
-RDEPEND="dev-libs/DirectFB[fbcon]
+RDEPEND="dev-libs/DirectFB[fbcon,dynload]
 	virtual/jpeg"
 
 DEPEND="${RDEPEND}
