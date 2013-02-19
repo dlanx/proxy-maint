@@ -40,10 +40,7 @@ src_configure() {
 
 src_install() {
 	default
-
-	if ! use static-libs ; then
-		find "${ED}" -name '*.la' -delete || die
-	fi
+	use static-libs || prune_libtool_files
 }
 
 pkg_preinst() {
