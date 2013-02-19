@@ -23,8 +23,6 @@ RDEPEND="dev-libs/DirectFB[fbcon]
 
 DEPEND="${RDEPEND}
 	dmalloc? ( dev-libs/dmalloc )
-	virtual/pkgconfig
-	>=sys-apps/sed-4
 	x11-proto/xproto"
 
 DOCS=( NEWS THANKS )
