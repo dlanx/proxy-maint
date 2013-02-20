@@ -57,6 +57,7 @@ src_configure() {
 		$(use_enable qmimodem) \
 		$(use_enable tools) \
 		$(use_enable test) \
+		--disable-maintainer-mode \
 		--localstatedir=/var \
 		--with-systemdunitdir="$(systemd_get_unitdir)"
 }
