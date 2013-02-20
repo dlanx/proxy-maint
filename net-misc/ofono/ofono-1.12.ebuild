@@ -13,8 +13,8 @@ SRC_URI="mirror://kernel/linux/network/${PN}/${P}.tar.bz2"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="+atmodem bluetooth +cdmamodem doc dundee examples +isimodem +phonesim
-+provision +qmimodem threads test tools +udev"
+IUSE="+atmodem bluetooth +cdmamodem +datafiles doc dundee examples +isimodem
++phonesim +provision +qmimodem threads test tools +udev"
 
 REQUIRED_USE="dundee? ( bluetooth )"
 
@@ -49,6 +49,7 @@ src_configure() {
 		$(use_enable isimodem) \
 		$(use_enable atmodem) \
 		$(use_enable cdmamodem) \
+		$(use_enable datafiles) \
 		$(use_enable dundee) \
 		$(use_enable bluetooth) \
 		$(use_enable phonesim) \
