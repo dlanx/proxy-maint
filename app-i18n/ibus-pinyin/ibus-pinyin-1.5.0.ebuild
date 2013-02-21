@@ -9,6 +9,7 @@ PYTHON_USE_WITH="sqlite"
 
 inherit python
 
+PYDB_TAR="pinyin-database-1.2.99.tar.bz2"
 DESCRIPTION="Chinese PinYin IMEngine for IBus Framework"
 HOMEPAGE="http://code.google.com/p/ibus/"
 SRC_URI="http://ibus.googlecode.com/files/${P}.tar.gz"
@@ -26,7 +27,7 @@ RDEPEND=">=app-i18n/ibus-1.4
 
 DEPEND="${RDEPEND}
 	virtual/pkgconfig
-	dev-python/pyzy
+	dev-libs/pyzy
 	nls? ( >=sys-devel/gettext-0.16.1 )"
 
 DOCS="AUTHORS ChangeLog NEWS README"
@@ -34,10 +35,6 @@ DOCS="AUTHORS ChangeLog NEWS README"
 pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
-}
-
-src_prepare() {
-	>py-compile
 }
 
 src_configure() {
