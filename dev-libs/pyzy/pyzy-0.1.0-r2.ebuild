@@ -15,9 +15,10 @@ SRC_URI="https://pyzy.googlecode.com/files/${P}.tar.gz
 LICENSE="LGPL-2.1"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="+boost +db doc +opencc"
+IUSE="+boost db doc +opencc"
 
 RDEPEND="dev-libs/glib:2
+	!!<=app-i18n/ibus-pinyin-1.4.0
 	boost? ( dev-libs/boost )
 	opencc? ( app-i18n/opencc )"
 
@@ -25,13 +26,14 @@ DEPEND="${DEPEND}
 	doc? ( app-doc/doxygen )"
 
 src_prepare() {
-	epatch "${FILESDIR}"/${P}-db.patch
 	epatch "${FILESDIR}"/${PN}-dont-download-dictionary-file.patch
+	mv ../db ./data/db/open-phrase/ || die
 	eautoreconf
 }
 
 src_configure() {
 	econf \
+		--enable-db-open-phrase \
 		$(use_enable boost) \
 		$(use_enable opencc) \
 		$(use_enable db db-android)
