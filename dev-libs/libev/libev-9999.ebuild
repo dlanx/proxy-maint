@@ -4,18 +4,19 @@
 
 EAPI=5
 
-inherit autotools eutils multilib
+ECVS_SERVER="anonymous@cvs.schmorp.de/schmorpforge"
+ECVS_MODULE="libev"
+inherit autotools cvs eutils multilib
 
 MY_P="${P}"
 
 DESCRIPTION="A high-performance event loop/event model with lots of feature"
 HOMEPAGE="http://software.schmorp.de/pkg/libev.html"
-SRC_URI="http://dist.schmorp.de/libev/${MY_P}.tar.gz
-	http://dist.schmorp.de/libev/Attic/${MY_P}.tar.gz"
+SRC_URI=""
 
 LICENSE="|| ( BSD GPL-2 )"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x86-freebsd ~amd64-linux ~x86-linux ~ppc-macos ~x86-macos"
+KEYWORDS=""
 IUSE="elibc_glibc static-libs"
 
 # Bug #283558
@@ -27,12 +28,6 @@ S="${WORKDIR}/${MY_P}"
 DOCS=( Changes README )
 
 src_prepare() {
-	epatch "${FILESDIR}/4.01-gentoo.patch"
-	# bug #411847
-	epatch "${FILESDIR}/${PN}-pc.patch"
-	# bug 429526
-	epatch "${FILESDIR}/${P}-gentoo.patch"
-
 	eautoreconf
 }
 
