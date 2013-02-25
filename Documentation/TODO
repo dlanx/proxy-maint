@@ -1,0 +1,2 @@
+net-misc/ofono:
+	bluez4, and bluez5 working, depend on #452162
