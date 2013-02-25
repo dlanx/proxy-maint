@@ -7,11 +7,11 @@ EAPI=5
 AUTOTOOLS_IN_SOURCE_BUILD=1
 AUTOTOOLS_AUTORECONF=1
 
-inherit eutils autotools-utils
+EGIT_SRC_URI="git://github.com/drinkmilk/${PN}.git"
+inherit eutils autotools-utils git-2
 
 DESCRIPTION="Very thin VNC client for unix framebuffer systems"
 HOMEPAGE="http://drinkmilk.github.com/directvnc/"
-SRC_URI="http://github.com/downloads/drinkmilk/${PN}/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -29,11 +29,6 @@ DOCS=( NEWS THANKS )
 
 src_prepare() {
 	use mouse || epatch "${FILESDIR}"/${P}-mouse.patch
-
-	# fix package version
-	sed -i -e '/^AM_INIT_AUTOMAKE/s/0.7.7/0.7.8/g' configure.in || die
-	# fix build system don't respect --docdir option
-	sed -i -e 's|$(prefix)/share/doc/@PACKAGE@|@docdir@|g' Makefile.am || die
 
 	autotools-utils_src_prepare
 }
