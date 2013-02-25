@@ -4,11 +4,11 @@
 
 EAPI=5
 
-ECVS_SERVER="anonymous@cvs.schmorp.de/schmorpforge"
+ECVS_SERVER="cvs.schmorp.de/schmorpforge"
 ECVS_MODULE="libev"
 inherit autotools cvs eutils multilib
 
-MY_P="${P}"
+MY_P="${PN}"
 
 DESCRIPTION="A high-performance event loop/event model with lots of feature"
 HOMEPAGE="http://software.schmorp.de/pkg/libev.html"
