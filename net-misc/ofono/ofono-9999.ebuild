@@ -4,15 +4,18 @@
 
 EAPI=5
 
-inherit eutils multilib systemd
+AUTOTOOLS_AUTORECONF=1
+AUTOTOOLS_IN_SOURCE_BUILD=1
+
+EGIT_REPO_URI="git://git.kernel.org/pub/scm/network/${PN}/${PN}.git"
+inherit eutils multilib autotools-utils systemd git-2
 
 DESCRIPTION="Open Source mobile telephony (GSM/UMTS) daemon."
 HOMEPAGE="http://ofono.org/"
-SRC_URI="mirror://kernel/linux/network/${PN}/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS=""
 IUSE="+atmodem bluetooth +cdmamodem +datafiles doc dundee examples +isimodem
 +phonesim +provision +qmimodem threads test tools +udev"
 
@@ -31,14 +34,7 @@ DEPEND="${RDEPEND}
 DOCS=( ChangeLog AUTHORS )
 
 src_prepare() {
-	default
-	# backport upstream patches
-	epatch "${FILESDIR}"/${P}-sys-types.patch
-
-	# Fix build with newer glib due to G_DISABLE_SINGLE_INCLUDES
-	grep -lre '<glib/gtypes.h>' "${S}" | while read i; do
-		sed -ie 's:glib/gtypes.h:glib.h:' "${i}" || die "Unable to sed \"$i\""
-	done
+	autotools-utils_src_prepare
 }
 
 src_configure() {
