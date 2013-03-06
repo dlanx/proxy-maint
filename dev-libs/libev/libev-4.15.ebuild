@@ -23,7 +23,8 @@ RDEPEND="${DEPEND}"
 DOCS=( Changes README )
 
 src_prepare() {
-	epatch "${FILESDIR}/4.01-gentoo.patch"
+	sed -i -e "/^include_HEADERS/s/ event.h//" Makefile.am || die
+
 	# bug #411847
 	epatch "${FILESDIR}/${PN}-pc.patch"
 
@@ -31,7 +32,9 @@ src_prepare() {
 }
 
 src_configure() {
-	econf $(use_enable static-libs static)
+	econf \
+		--disable-maintainer-mode \
+		$(use_enable static-libs static)
 }
 
 src_install() {
