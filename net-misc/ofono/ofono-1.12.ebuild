@@ -31,13 +31,8 @@ DOCS=( ChangeLog AUTHORS )
 
 src_prepare() {
 	default
-	# backport upstream patches
-	epatch "${FILESDIR}"/${P}-sys-types.patch
 
-	# Fix build with newer glib due to G_DISABLE_SINGLE_INCLUDES
-	grep -lre '<glib/gtypes.h>' "${S}" | while read i; do
-		sed -ie 's:glib/gtypes.h:glib.h:' "${i}" || die "Unable to sed \"$i\""
-	done
+	epatch "${FILESDIR}"/${P}-sys-types.patch
 }
 
 src_configure() {
