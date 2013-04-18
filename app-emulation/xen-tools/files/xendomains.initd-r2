@@ -1,13 +1,13 @@
 #!/sbin/runscript
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/files/xendomains.initd-r2,v 1.2 2011/09/10 17:22:46 alexxy Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/files/xendomains.initd-r2,v 1.6 2013/02/24 10:39:11 idella4 Exp $
 
-opts="start stop status restart"
+extra_commands="status"
 
 depend() {
-	need xenstored xenconsoled
-	after dhcp xend
+	need xenstored
+	after dhcp xend xenconsoled
 }
 
 get_domname() {
@@ -39,6 +39,7 @@ start() {
 	if using_screen ; then
 		ebegin "Creating screen session to hold domain consoles"
 		(  screen -c ${SCREENRC:-/dev/null} -d -m -S ${SCREEN_NAME} -t dom0 \
+		&& sleep 5 \
 		&& ${screen_cmd} zombie dr \
 		&& logrotate -f /etc/xen/xen-consoles.logrotate \
 		&& ${screen_cmd} logfile  /var/log/xen-consoles/%t.log \
