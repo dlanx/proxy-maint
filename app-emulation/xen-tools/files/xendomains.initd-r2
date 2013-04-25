@@ -16,7 +16,7 @@ get_domname() {
 	if [[ -z ${name_from_file} ]] ; then
 		basename "${1}"
 	else
-		echo ${name_from_file}	
+		echo ${name_from_file}
 	fi
 }
 
@@ -25,7 +25,7 @@ is_running() {
 }
 
 using_screen() {
-	[[ "${SCREEN}" == "yes" || "${SCREEN}" == "YES" ]]	
+	[[ "${SCREEN}" == "yes" || "${SCREEN}" == "YES" ]]
 }
 
 set_screen_cmd() {
