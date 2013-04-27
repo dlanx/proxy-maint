@@ -67,8 +67,8 @@ src_prepare() {
 
 	if use efi; then
 		epatch "${FILESDIR}"/${PN}-4.2-efi.patch
-		export EFI_VENDOR="gentoo"
-		export EFI_MOUNTPOINT="boot"
+		export EFI_VENDOR="${EFI_VENDOR:-gentoo}"
+		export EFI_MOUNTPOINT="${EFI_MOUNTPOINT:-boot}"
 	fi
 
 	# if the user *really* wants to use their own custom-cflags, let them
@@ -86,11 +86,6 @@ src_prepare() {
 
 	# not strictly necessary to fix this
 	sed -i 's/, "-Werror"//' "${S}/tools/python/setup.py" || die "failed to re-set setup.py"
-
-	#Security patches
-	epatch "${FILESDIR}"/${PN}-4-CVE-2012-5634-XSA-33.patch \
-                "${FILESDIR}"/${PN}-4-CVE-2013-0151-XSA-34_35.patch \
-                "${FILESDIR}"/${PN}-4-CVE-2013-0154-XSA-37.patch
 }
 
 src_configure() {

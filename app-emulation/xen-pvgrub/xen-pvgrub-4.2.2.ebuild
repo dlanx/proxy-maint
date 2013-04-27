@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-pvgrub/xen-pvgrub-4.2.1-r1.ebuild,v 1.3 2013/02/10 08:20:23 idella4 Exp $
 
-EAPI=4
+EAPI=5
 PYTHON_DEPEND="2:2.6"
 
 inherit flag-o-matic eutils multilib python toolchain-funcs
@@ -10,6 +10,7 @@ inherit flag-o-matic eutils multilib python toolchain-funcs
 XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
 LIBPCI_URL=ftp://atrey.karlin.mff.cuni.cz/pub/linux/pci
 GRUB_URL=mirror://gnu-alpha/grub
+# Todo: bump? change urls to real upstreams?
 SRC_URI="
 		http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
 		$GRUB_URL/grub-0.97.tar.gz
@@ -29,7 +30,7 @@ IUSE="custom-cflags"
 
 DEPEND="sys-devel/gettext"
 
-RDEPEND=">=app-emulation/xen-4.2.1"
+RDEPEND="~app-emulation/xen-${PV}"
 
 pkg_setup() {
 	python_set_active_version 2
