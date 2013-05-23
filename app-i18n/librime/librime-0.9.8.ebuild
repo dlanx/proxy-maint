@@ -17,7 +17,7 @@ IUSE="static-libs"
 
 RDEPEND="app-i18n/opencc
 	dev-cpp/glog
-	dev-cpp/yaml-cpp
+	<dev-cpp/yaml-cpp-0.5.0
 	dev-db/kyotocabinet
 	>=dev-libs/boost-1.46.0[threads(+)]
 	sys-libs/zlib
