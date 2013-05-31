@@ -29,6 +29,7 @@ S=${WORKDIR}/${PN}
 
 src_prepare() {
 	epatch ${FILESDIR}/${PN}-test.patch
+	epatch ${FILESDIR}/${PN}-dictionary.patch
 }
 
 src_configure() {
