@@ -21,15 +21,15 @@ RDEPEND="app-i18n/opencc
 	dev-db/kyotocabinet
 	>=dev-libs/boost-1.46.0[threads(+)]
 	sys-libs/zlib
-	x11-proto/xproto
+	x11-proto/xproto"
+DEPEND="${RDEPEND}
 	test? ( dev-cpp/gtest )"
-DEPEND="${RDEPEND}"
 
 S=${WORKDIR}/${PN}
 
 src_prepare() {
-	epatch ${FILESDIR}/${PN}-test.patch
-	epatch ${FILESDIR}/${PN}-dictionary.patch
+	epatch "${FILESDIR}"/${PN}-test.patch
+	epatch "${FILESDIR}"/${PN}-dictionary.patch
 }
 
 src_configure() {
