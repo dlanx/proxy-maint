@@ -16,7 +16,7 @@ SRC_URI="mirror://kernel/linux/daemons/${PN}/v5/${P}.tar.bz2
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc ~x86"
-IUSE="hesiod ldap mount-locking sasl"
+IUSE="hesiod ldap libtirpc mount-locking sasl"
 
 # USE="sasl" adds SASL support to the LDAP module which will not be build. If
 # SASL support should be available, please add "ldap" to the USE flags.
@@ -28,7 +28,9 @@ RDEPEND="
 	ldap? ( >=net-nds/openldap-2.0
 		sasl? ( dev-libs/cyrus-sasl
 			dev-libs/libxml2
-			virtual/krb5 ) )"
+			virtual/krb5 ) )
+	libtirpc? ( net-libs/libtirpc )"
+
 DEPEND="${RDEPEND}
 	sys-devel/flex
 	virtual/yacc"
@@ -79,6 +81,7 @@ src_configure() {
 		--with-confdir=/etc/conf.d \
 		--with-mapdir=/etc/autofs \
 		$(use_with ldap openldap) \
+		$(use_with libtirpc) \
 		$(use_with sasl) \
 		$(use_with hesiod) \
 		$(use_enable mount-locking) \

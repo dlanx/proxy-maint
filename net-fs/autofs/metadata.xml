@@ -10,6 +10,7 @@
   <use>
     <flag name="hesiod">Install hesiod module</flag>
     <flag name="ldap">Install LDAP module</flag>
+    <flag name="libtirpc">Use libtirpc lib support</flag>
     <flag name="mount-locking">
 		Enable locking to prevent corruption of /etc/mtab in the presence of
 		concurrent auto-mounting. If enabled, recursive auto-mounting (eg. using
