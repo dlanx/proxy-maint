@@ -58,6 +58,7 @@ PATCHES=(
 	"${FILESDIR}"/${P}-add-missing-endif-HAVE_SASL-in-modules-lookup_ldap.c.patch #361899, #468606
 	"${FILESDIR}"/${PN}-5.0.6-revert-ldap.patch #381315
 	"${FILESDIR}"/${PN}-5.0.7-mount-sloppy.patch #453778
+	"${FILESDIR}"/${PN}-5.0.7-sasl-def.patch #469324
 	)
 
 AUTOTOOLS_IN_SOURCE_BUILD=1
