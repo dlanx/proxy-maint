@@ -68,6 +68,7 @@ src_prepare() {
 		EPATCH_SUFFIX="patch" \
 			epatch "${WORKDIR}"/patches
 	fi
+	epatch_user
 	autotools-utils_src_prepare
 }
 
