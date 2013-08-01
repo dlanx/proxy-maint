@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
 
-EAPI="4"
+EAPI="5"
 PYTHON_DEPEND="2"
 PYTHON_USE_WITH="xml threads"
 
@@ -11,10 +11,10 @@ if [[ $PV == *9999 ]]; then
 	REPO="xen-unstable.hg"
 	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
 	IPXE_COMMIT="9a93db3f0947484e30e753bbd61a10b17336e20e"
-	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
+	EGIT_REPO_URI="git://xenbits.xen.org/xen.git"
 	SRC_URI="http://dev.gentoo.org/~alexxy/distfiles/ipxe-git-${IPXE_COMMIT}.tar.gz"
-	S="${WORKDIR}/${REPO}"
-	live_eclass="mercurial"
+	S="${WORKDIR}/xen"
+	live_eclass="git-2"
 else
 	KEYWORDS="~amd64 ~x86"
 	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
