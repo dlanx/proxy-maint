@@ -2,14 +2,12 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen/xen-9999.ebuild,v 1.4 2011/09/11 14:48:15 alexxy Exp $
 
-EAPI="4"
+EAPI="5"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
-	REPO="xen-unstable.hg"
-	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
-	S="${WORKDIR}/${REPO}"
-	live_eclass="mercurial"
+	EGIT_REPO_URI="git://xenbits.xen.org/${PN}.git"
+	live_eclass="git-2"
 else
 	KEYWORDS="~amd64 ~x86"
 	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz"
