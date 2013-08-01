@@ -205,7 +205,6 @@ src_compile() {
 	emake CC=$(tc-getCC) LD=$(tc-getLD) -C tools ${myopt}
 
 	if use doc; then
-		sh ./docs/check_pkgs || die "package check failed"
 		emake docs
 		emake dev-docs
 	fi
