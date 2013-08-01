@@ -12,6 +12,9 @@ if [[ $PV == *9999 ]]; then
 	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
 	IPXE_COMMIT="9a93db3f0947484e30e753bbd61a10b17336e20e"
 	EGIT_REPO_URI="git://xenbits.xen.org/xen.git"
+	EGIT_REPO_URI_QEMU="git://xenbits.xen.org/qemu-upstream-unstable.git"
+	EGIT_REPO_URI_TRAD="git://xenbits.xen.org/qemu-xen-unstable.git"
+	EGIT_REPO_URI_SEAB="git://xenbits.xen.org/seabios.git"
 	SRC_URI="http://dev.gentoo.org/~alexxy/distfiles/ipxe-git-${IPXE_COMMIT}.tar.gz"
 	S="${WORKDIR}/xen"
 	live_eclass="git-2"
@@ -90,6 +93,41 @@ QA_EXECSTACK="usr/share/xen/qemu/openbios-sparc32
 	usr/share/xen/qemu/openbios-sparc64"
 RESTRICT="test"
 
+xen-tools_init_variables() {
+	EGIT_REPO_URI="$1"
+	EGIT_DEST="$2"
+	EGIT_BRANCH="${3:-master}"
+	EGIT_PROJECT="${EGIT_REPO_URI##*/}"
+	EGIT_SOURCEDIR=${WORKDIR}/${EGIT_PROJECT%.git}
+}
+
+xen-tools_checkout() {
+	# just create proper symbol link
+	ln -s ${WORKDIR}/${EGIT_PROJECT%.git} ${S}/${EGIT_DEST} || die
+}
+
+xen-tools_cleanup() {
+	unset EGIT_BRANCH
+	unset EGIT_COMMIT
+}
+
+xen-tools_unpack() {
+	xen-tools_init_variables $@
+
+	git-2_init_variables
+	git-2_prepare_storedir
+	git-2_migrate_repository
+	git-2_fetch
+	git-2_gc
+	git-2_submodules
+	git-2_move_source
+	git-2_branch
+
+	xen-tools_checkout
+	git-2_cleanup
+	xen-tools_cleanup
+}
+
 pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
@@ -122,6 +160,13 @@ pkg_setup() {
 
 	use api     && export "LIBXENAPI_BINDINGS=y"
 	use flask   && export "FLASK_ENABLE=y"
+}
+
+src_unpack() {
+	git-2_src_unpack
+	xen-tools_unpack "${EGIT_REPO_URI_QEMU}" tools/qemu-xen-dir
+	xen-tools_unpack "${EGIT_REPO_URI_TRAD}" tools/qemu-xen-traditional-dir
+	xen-tools_unpack "${EGIT_REPO_URI_SEAB}" tools/firmware/seabios-dir 1.7.1-stable-xen
 }
 
 src_prepare() {
@@ -182,6 +227,7 @@ src_prepare() {
 		-e 's:^\tfi:#\tfi:' -i \
 		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
 		-i tools/firmware/etherboot/Makefile || die
+	epatch_user
 }
 
 src_configure() {
@@ -195,6 +241,8 @@ src_compile() {
 	export VARTEXFONTS="${T}/fonts"
 	local myopt
 	use debug && myopt="${myopt} debug=y"
+	myopt="${myopt} QEMU_UPSTREAM_URL=${S}/tools/qemu-xen-dir"
+	myopt="${myopt} CONFIG_QEMU=${S}/tools/qemu-xen-traditional-dir"
 
 	use custom-cflags || unset CFLAGS
 	if test-flag-CC -fno-strict-overflow; then
@@ -204,11 +252,7 @@ src_compile() {
 	unset LDFLAGS
 	emake CC=$(tc-getCC) LD=$(tc-getLD) -C tools ${myopt}
 
-	if use doc; then
-		emake docs
-		emake dev-docs
-	fi
-
+	use doc && emake docs
 	emake -C docs man-pages
 }
 
@@ -232,7 +276,6 @@ src_install() {
 	if use doc; then
 		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
-		dohtml -r docs/api/
 		docinto pdf
 		dodoc ${DOCS[@]}
 		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
