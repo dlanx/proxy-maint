@@ -182,9 +182,6 @@ src_prepare() {
 		-e 's:^\tfi:#\tfi:' -i \
 		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
 		-i tools/firmware/etherboot/Makefile || die
-
-	# Patch tools/Makefile to build/install qemu & qemu-upstream correctly
-	epatch "${FILESDIR}/${PN}-9999-qemu.patch"
 }
 
 src_configure() {
