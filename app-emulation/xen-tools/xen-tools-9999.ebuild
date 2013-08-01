@@ -40,7 +40,7 @@ QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
 	/usr/share/xen/qemu/openbios-sparc32"
 QA_WX_LOAD=${QA_PRESTRIPPED}
 
-CDEPEND="<dev-libs/yajl-2
+CDEPEND="dev-libs/yajl
 	dev-python/lxml
 	dev-python/pypam
 	dev-python/pyxml
