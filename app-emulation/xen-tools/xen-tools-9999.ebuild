@@ -344,13 +344,14 @@ pkg_postinst() {
 	elog " http://www.gentoo.org/doc/en/xen-guide.xml"
 	elog " http://gentoo-wiki.com/HOWTO_Xen_and_Gentoo"
 
-	if [[ "$(scanelf -s __guard -q $(type -P python))" ]] ; then
+	if [[ "$(scanelf -s __guard -q "${PYTHON}")" ]] ; then
 		echo
 		ewarn "xend may not work when python is built with stack smashing protection (ssp)."
 		ewarn "If 'xm create' fails with '<ProtocolError for /RPC2: -1 >', see bug #141866"
-		ewarn "This probablem may be resolved as of Xen 3.0.4, if not post in the bug."
+		ewarn "This problem may be resolved as of Xen 3.0.4, if not post in the bug."
 	fi
 
+	# TODO: we need to have the current Python slot here.
 	if ! has_version "dev-lang/python[ncurses]"; then
 		echo
 		ewarn "NB: Your dev-lang/python is built without USE=ncurses."
@@ -368,13 +369,17 @@ pkg_postinst() {
 		elog "HVM (VT-x and AMD-V) support has been disabled. If you need hvm"
 		elog "support enable the hvm use flag."
 		elog "An x86 or amd64 multilib system is required to build HVM support."
-		echo
-		elog "The qemu use flag has been removed and replaced with hvm."
 	fi
 
 	if use xend; then
-		echo
-		elog "xend capability has been enabled and installed"
+		elog"";elog "xend capability has been enabled and installed"
+	fi
+
+	if use qemu; then
+		elog "The qemu-bridge-helper is renamed to the xen-bridge-helper in the in source"
+		elog "build of qemu.  This allows for app-emulation/qemu to be emerged concurrently"
+		elog "with the qemu capable xen.  It is up to the user to distinguish between and utilise"
+		elog "the qemu-bridge-helper and the xen-bridge-helper.  File bugs of any issues that arise"
 	fi
 
 	if grep -qsF XENSV= "${ROOT}/etc/conf.d/xend"; then
