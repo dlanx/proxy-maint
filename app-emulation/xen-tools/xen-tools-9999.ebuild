@@ -1,11 +1,14 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
 
-EAPI="5"
+EAPI=5
 
 PYTHON_COMPAT=( python{2_6,2_7} )
 PYTHON_REQ_USE='xml,threads'
+
+IPXE_TARBALL_URL="http://dev.gentoo.org/~idella4/tarballs/ipxe.tar.gz"
+XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-dir-remote-20130720.tar.gz"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -21,13 +24,13 @@ if [[ $PV == *9999 ]]; then
 	live_eclass="git-2"
 else
 	KEYWORDS="~amd64 ~x86"
-	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz \
-	$XEN_EXTFILES_URL/ipxe-git-v1.0.0.tar.gz"
+	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
+	$IPXE_TARBALL_URL
+	$XEN_SEABIOS_URL"
 	S="${WORKDIR}/xen-${PV}"
 fi
 
-inherit bash-completion-r1 flag-o-matic eutils multilib python-single-r1 toolchain-funcs udev ${live_eclass}
+inherit bash-completion-r1 eutils flag-o-matic multilib python-single-r1 toolchain-funcs udev ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
@@ -58,12 +61,13 @@ DEPEND="${CDEPEND}
 	sys-devel/dev86
 	dev-lang/perl
 	app-misc/pax-utils
+	dev-python/markdown
 	doc? (
 		app-doc/doxygen
 		dev-tex/latex2html[png,gif]
-		media-gfx/transfig
 		media-gfx/graphviz
 		dev-tex/xcolor
+		media-gfx/transfig
 		dev-texlive/texlive-latexextra
 		virtual/latex-base
 		dev-tex/latexmk
@@ -72,8 +76,8 @@ DEPEND="${CDEPEND}
 		dev-texlive/texlive-latexrecommended
 	)
 	hvm? ( x11-proto/xproto
-		 !net-libs/libiscsi )
-	 qemu? ( x11-libs/pixman )"
+		!net-libs/libiscsi )
+	qemu? ( x11-libs/pixman )"
 
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
@@ -88,7 +92,6 @@ RDEPEND="${CDEPEND}
 # hvmloader is used to bootstrap a fully virtualized kernel
 # Approved by QA team in bug #144032
 QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
-
 
 RESTRICT="test"
 
@@ -129,6 +132,7 @@ xen-tools_unpack() {
 
 pkg_setup() {
 	python_single-r1_pkg_setup
+	export "CONFIG_LOMOUNT=y"
 	export "CONFIG_TESTS=n"
 
 	if has_version dev-libs/libgcrypt; then
@@ -244,10 +248,7 @@ src_prepare() {
 src_configure() {
 	econf \
 		--enable-lomount \
-		--disable-werror \
-		BISON=/usr/bin/bison \
-		FLEX=/usr/bin/flex
-
+		--disable-werror
 }
 
 src_compile() {
@@ -263,13 +264,15 @@ src_compile() {
 	unset LDFLAGS
 	unset CFLAGS
 	emake V=1 CC="$(tc-getCC)" LD="$(tc-getLD)" AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)" -C tools ${myopt}
-	use doc && emake docs
+
+	# add figs if media-gfx/transfig enabled
+	use doc && emake -C docs txt html figs
 	emake -C docs man-pages
 }
 
 src_install() {
 	# Override auto-detection in the build system, bug #382573
-	export INITD_DIR=/etc/init.d
+	export INITD_DIR=/tmp/init.d
 	export CONFIG_LEAF_DIR=../tmp/default
 
 	# Let the build system compile installed Python modules.
@@ -280,10 +283,10 @@ src_install() {
 		XEN_PYTHON_NATIVE_INSTALL=y install-tools
 
 	# Fix the remaining Python shebangs.
-	python_fix_shebangs "${D}"
+	python_fix_shebang "${D}"
 
 	# Remove RedHat-specific stuff
-	rm -rf "${D}"/etc/init.d/xen* "${D}"/etc/default || die
+	rm -rf "${D}"/tmp || die
 
 	# uncomment lines in xl.conf
 	sed -e 's:^#autoballoon=1:autoballoon=1:' \
@@ -301,6 +304,7 @@ src_install() {
 		dodoc ${DOCS[@]}
 		[ -d "${D}"/usr/share/doc/xen ] && mv "${D}"/usr/share/doc/xen/* "${D}"/usr/share/doc/${PF}/html
 	fi
+
 	rm -rf "${D}"/usr/share/doc/xen/
 	doman docs/man?/*
 
