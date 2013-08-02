@@ -202,6 +202,10 @@ src_prepare() {
 		sed -e '/^SUBDIRS-$(PYTHON_TOOLS) += pygrub$/d' -i tools/Makefile || die
 	fi
 
+	if ! use python; then
+		sed -e '/^SUBDIRS-y += python$/d' -i tools/Makefile || die
+	fi
+
 	# Disable hvm support on systems that don't support x86_32 binaries.
 	if ! use hvm; then
 		chmod 644 tools/check/check_x11_devel
