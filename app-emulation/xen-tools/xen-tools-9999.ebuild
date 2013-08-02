@@ -85,14 +85,6 @@ RDEPEND="${CDEPEND}
 	)
 	virtual/udev"
 
-QA_EXECSTACK="usr/share/qemu-xen/qemu/palcode-clipper
-	usr/share/qemu-xen/qemu/openbios-ppc
-	usr/share/qemu-xen/qemu/openbios-sparc64
-	usr/share/qemu-xen/qemu/openbios-sparc32
-	usr/share/xen/qemu/openbios-ppc
-	usr/share/xen/qemu/openbios-sparc64
-	usr/share/xen/qemu/openbios-sparc32"
-
 # hvmloader is used to bootstrap a fully virtualized kernel
 # Approved by QA team in bug #144032
 QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
@@ -137,7 +129,7 @@ xen-tools_unpack() {
 
 pkg_setup() {
 	python_single-r1_pkg_setup
-	export "CONFIG_LOMOUNT=y"
+	export "CONFIG_TESTS=n"
 
 	if has_version dev-libs/libgcrypt; then
 		export "CONFIG_GCRYPT=y"
@@ -243,7 +235,10 @@ src_prepare() {
 src_configure() {
 	econf \
 		--enable-lomount \
-		--disable-werror
+		--disable-werror \
+		BISON=/usr/bin/bison \
+		FLEX=/usr/bin/flex
+
 }
 
 src_compile() {
@@ -272,14 +267,14 @@ src_install() {
 	local PYTHONDONTWRITEBYTECODE
 	export PYTHONDONTWRITEBYTECODE
 
-	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" \
+	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" \
 		XEN_PYTHON_NATIVE_INSTALL=y install-tools
 
 	# Fix the remaining Python shebangs.
-	python_fix_shebangs "${ED}"
+	python_fix_shebangs "${D}"
 
 	# Remove RedHat-specific stuff
-	rm -rf "${ED}"/etc/init.d/xen* "${ED}"/etc/default || die
+	rm -rf "${D}"/etc/init.d/xen* "${D}"/etc/default || die
 
 	# uncomment lines in xl.conf
 	sed -e 's:^#autoballoon=1:autoballoon=1:' \
@@ -288,13 +283,13 @@ src_install() {
 		-i tools/examples/xl.conf  || die
 
 	if use doc; then
-		emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" install-docs
+		emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
 		docinto pdf
 		dodoc ${DOCS[@]}
-		[ -d "${ED}"/usr/share/doc/xen ] && mv "${ED}"/usr/share/doc/xen/* "${ED}"/usr/share/doc/${PF}/html
+		[ -d "${D}"/usr/share/doc/xen ] && mv "${D}"/usr/share/doc/xen/* "${D}"/usr/share/doc/${PF}/html
 	fi
-	rm -rf "${ED}"/usr/share/doc/xen/
+	rm -rf "${D}"/usr/share/doc/xen/
 	doman docs/man?/*
 
 	if use xend; then
@@ -308,17 +303,36 @@ src_install() {
 	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
 
 	if use screen; then
-		cat "${FILESDIR}"/xendomains-screen.confd >> "${ED}"/etc/conf.d/xendomains || die
-		cp "${FILESDIR}"/xen-consoles.logrotate "${ED}"/etc/xen/ || die
+		cat "${FILESDIR}"/xendomains-screen.confd >> "${D}"/etc/conf.d/xendomains || die
+		cp "${FILESDIR}"/xen-consoles.logrotate "${D}"/etc/xen/ || die
 		keepdir /var/log/xen-consoles
 	fi
 
-	python_convert_shebangs -r 2 "${ED}"
+	# Move files built with use qemu, Bug #477884
+	if [[ "${ARCH}" == 'amd64' ]] && use qemu; then
+		mkdir -p "${D}"usr/$(get_libdir)/xen/bin || die
+		mv "${D}"usr/lib/xen/bin/* "${D}"usr/$(get_libdir)/xen/bin/ || die
+	fi
+
+	# For -static-libs wrt Bug 384355
+	if ! use static-libs; then
+		rm -f "${D}"usr/$(get_libdir)/*.a "${D}"usr/$(get_libdir)/ocaml/*/*.a
+	fi
+
 	# xend expects these to exist
 	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 
 	# for xendomains
 	keepdir /etc/xen/auto
+
+	# Temp QA workaround
+	dodir "$(udev_get_udevdir)"
+	mv "${D}"/etc/udev/* "${D}/$(udev_get_udevdir)"
+	rm -rf "${D}"/etc/udev
+
+	# Remove files failing QA AFTER emake installs them, avoiding seeking absent files
+	find "${D}" \( -name openbios-sparc32 -o -name openbios-sparc64 \
+		-o -name openbios-ppc -o -name palcode-clipper \) -delete || die
 }
 
 pkg_postinst() {
