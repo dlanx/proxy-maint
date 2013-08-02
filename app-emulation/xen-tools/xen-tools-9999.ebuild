@@ -3,8 +3,9 @@
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
 
 EAPI="5"
-PYTHON_DEPEND="2"
-PYTHON_USE_WITH="xml threads"
+
+PYTHON_COMPAT=( python{2_6,2_7} )
+PYTHON_REQ_USE='xml,threads'
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -26,7 +27,7 @@ else
 	S="${WORKDIR}/xen-${PV}"
 fi
 
-inherit flag-o-matic eutils multilib python toolchain-funcs ${live_eclass}
+inherit flag-o-matic eutils multilib python-single-r1 toolchain-funcs ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
@@ -34,29 +35,29 @@ DOCS=( README docs/README.xen-bugtool docs/ChangeLog )
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="api custom-cflags debug doc flask hvm qemu pygrub screen xend"
+IUSE="api custom-cflags debug doc flask hvm qemu ocaml python pygrub screen static-libs xend"
 
 REQUIRED_USE="hvm? ( qemu )"
 
-QA_PRESTRIPPED="/usr/share/xen/qemu/openbios-ppc \
-	/usr/share/xen/qemu/openbios-sparc64 \
-	/usr/share/xen/qemu/openbios-sparc32"
-QA_WX_LOAD=${QA_PRESTRIPPED}
-
-CDEPEND="dev-libs/yajl
-	dev-python/lxml
-	dev-python/pypam
+CDEPEND="dev-libs/lzo:2
+	dev-libs/yajl
+	dev-python/lxml[${PYTHON_USEDEP}]
+	dev-python/pypam[${PYTHON_USEDEP}]
 	dev-python/pyxml
 	sys-libs/zlib
-	hvm? ( media-libs/libsdl
-		sys-power/iasl )
-	api? ( dev-libs/libxml2 net-misc/curl )"
+	sys-power/iasl
+	dev-ml/findlib
+	hvm? ( media-libs/libsdl )
+	${PYTHON_DEPS}
+	api? ( dev-libs/libxml2
+		net-misc/curl )
+	pygrub? ( ${PYTHON_DEPS//${PYTHON_REQ_USE}/ncurses} )"
 
 DEPEND="${CDEPEND}
-	sys-devel/gcc
+	sys-devel/bin86
+	sys-devel/dev86
 	dev-lang/perl
 	app-misc/pax-utils
-	dev-ml/findlib
 	doc? (
 		app-doc/doxygen
 		dev-tex/latex2html[png,gif]
@@ -70,27 +71,33 @@ DEPEND="${CDEPEND}
 		dev-texlive/texlive-pictures
 		dev-texlive/texlive-latexrecommended
 	)
-	hvm? (
-		x11-proto/xproto
-		sys-devel/dev86
-	)	pygrub? ( dev-lang/python[ncurses] )
-	"
+	hvm? ( x11-proto/xproto
+		 !net-libs/libiscsi )
+	 qemu? ( x11-libs/pixman )"
 
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
 	net-misc/bridge-utils
-	>=dev-lang/ocaml-3.12.0
+	ocaml? ( >=dev-lang/ocaml-4 )
 	screen? (
 		app-misc/screen
 		app-admin/logrotate
 	)
-	|| ( sys-fs/udev sys-apps/hotplug )"
+	virtual/udev"
+
+QA_EXECSTACK="usr/share/qemu-xen/qemu/palcode-clipper
+	usr/share/qemu-xen/qemu/openbios-ppc
+	usr/share/qemu-xen/qemu/openbios-sparc64
+	usr/share/qemu-xen/qemu/openbios-sparc32
+	usr/share/xen/qemu/openbios-ppc
+	usr/share/xen/qemu/openbios-sparc64
+	usr/share/xen/qemu/openbios-sparc32"
 
 # hvmloader is used to bootstrap a fully virtualized kernel
 # Approved by QA team in bug #144032
 QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
-QA_EXECSTACK="usr/share/xen/qemu/openbios-sparc32
-	usr/share/xen/qemu/openbios-sparc64"
+
+
 RESTRICT="test"
 
 xen-tools_init_variables() {
@@ -129,9 +136,12 @@ xen-tools_unpack() {
 }
 
 pkg_setup() {
-	python_set_active_version 2
-	python_pkg_setup
-	export "CONFIG_TESTS=n"
+	python_single-r1_pkg_setup
+	export "CONFIG_LOMOUNT=y"
+
+	if has_version dev-libs/libgcrypt; then
+		export "CONFIG_GCRYPT=y"
+	fi
 
 	if use qemu; then
 		export "CONFIG_IOEMU=y"
@@ -233,16 +243,13 @@ src_prepare() {
 src_configure() {
 	econf \
 		--enable-lomount \
-		BISON=/usr/bin/bison \
-		FLEX=/usr/bin/flex
+		--disable-werror
 }
 
 src_compile() {
 	export VARTEXFONTS="${T}/fonts"
 	local myopt
 	use debug && myopt="${myopt} debug=y"
-	myopt="${myopt} QEMU_UPSTREAM_URL=${S}/tools/qemu-xen-dir"
-	myopt="${myopt} CONFIG_QEMU=${S}/tools/qemu-xen-traditional-dir"
 
 	use custom-cflags || unset CFLAGS
 	if test-flag-CC -fno-strict-overflow; then
@@ -250,8 +257,8 @@ src_compile() {
 	fi
 
 	unset LDFLAGS
-	emake CC=$(tc-getCC) LD=$(tc-getLD) -C tools ${myopt}
-
+	unset CFLAGS
+	emake V=1 CC="$(tc-getCC)" LD="$(tc-getLD)" AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)" -C tools ${myopt}
 	use doc && emake docs
 	emake -C docs man-pages
 }
@@ -259,10 +266,17 @@ src_compile() {
 src_install() {
 	# Override auto-detection in the build system, bug #382573
 	export INITD_DIR=/etc/init.d
-	export CONFIG_LEAF_DIR=default
+	export CONFIG_LEAF_DIR=../tmp/default
 
-	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" XEN_PYTHON_NATIVE_INSTALL=y install-tools
-	python_convert_shebangs -r 2 "${ED}"
+	# Let the build system compile installed Python modules.
+	local PYTHONDONTWRITEBYTECODE
+	export PYTHONDONTWRITEBYTECODE
+
+	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" \
+		XEN_PYTHON_NATIVE_INSTALL=y install-tools
+
+	# Fix the remaining Python shebangs.
+	python_fix_shebangs "${ED}"
 
 	# Remove RedHat-specific stuff
 	rm -rf "${ED}"/etc/init.d/xen* "${ED}"/etc/default || die
@@ -350,9 +364,4 @@ pkg_postinst() {
 		elog "xensv is broken upstream (Gentoo bug #142011)."
 		elog "Please remove '${ROOT%/}/etc/conf.d/xend', as it is no longer needed."
 	fi
-	python_mod_optimize $(use pygrub && echo grub) xen
-}
-
-pkg_postrm() {
-	python_mod_cleanup $(use pygrub && echo grub) xen
 }
