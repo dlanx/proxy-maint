@@ -27,7 +27,7 @@ else
 	S="${WORKDIR}/xen-${PV}"
 fi
 
-inherit flag-o-matic eutils multilib python-single-r1 toolchain-funcs ${live_eclass}
+inherit bash-completion-r1 flag-o-matic eutils multilib python-single-r1 toolchain-funcs udev ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
@@ -233,6 +233,11 @@ src_prepare() {
 		-e 's:^\tfi:#\tfi:' -i \
 		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
 		-i tools/firmware/etherboot/Makefile || die
+
+	# Bug 472438
+	sed -e 's:^BASH_COMPLETION_DIR ?= $(CONFIG_DIR)/bash_completion.d:BASH_COMPLETION_DIR ?= $(SHARE_DIR)/bash-completion:' \
+		-i Config.mk || die
+
 	epatch_user
 }
 
@@ -285,6 +290,9 @@ src_install() {
 		-e 's:^#lockfile="/var/lock/xl":lockfile="/var/lock/xl":' \
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
+
+	# Reset bash completion dir; Bug 472438
+	mv "${D}"bash-completion "${D}"usr/share/ || die
 
 	if use doc; then
 		emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-docs
