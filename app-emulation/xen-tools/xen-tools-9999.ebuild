@@ -183,26 +183,28 @@ src_prepare() {
 	# Xend
 	if ! use xend; then
 		sed -e 's:xm xen-bugtool xen-python-path xend:xen-bugtool xen-python-path:' \
-			-i tools/misc/Makefile || die "Disabling xend failed" || die
+			-i tools/misc/Makefile || die "Disabling xend failed"
 		sed -e 's:^XEND_INITD:#XEND_INITD:' \
-			-i tools/examples/Makefile || "Disabling xend failed" || die
+			-i tools/examples/Makefile || die "Disabling xend failed"
 	fi
+
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
 
-	# try and remove all the default custom-cflags
-	find "${S}" -name Makefile -o -name Rules.mk -o -name Config.mk -exec sed \
-		-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-march=i686\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
-		-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
-		-i {} \; || die "failed to re-set custom-cflags"
+		# try and remove all the default cflags
+		find "${S}" \( -name Makefile -o -name Rules.mk -o -name Config.mk \) \
+			-exec sed \
+				-e 's/CFLAGS\(.*\)=\(.*\)-O3\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-march=i686\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
+				-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
+				-i {} + || die "failed to re-set custom-cflags"
 	fi
 
 	if ! use pygrub; then
-		sed -e '/^SUBDIRS-$(PYTHON_TOOLS) += pygrub$/d' -i tools/Makefile || die
+		sed -e '/^SUBDIRS-y += pygrub$/d' -i tools/Makefile || die
 	fi
 
 	if ! use python; then
@@ -211,7 +213,6 @@ src_prepare() {
 
 	# Disable hvm support on systems that don't support x86_32 binaries.
 	if ! use hvm; then
-		chmod 644 tools/check/check_x11_devel
 		sed -e '/^CONFIG_IOEMU := y$/d' -i config/*.mk || die
 		sed -e '/SUBDIRS-$(CONFIG_X86) += firmware/d' -i tools/Makefile || die
 	fi
@@ -231,15 +232,15 @@ src_prepare() {
 		sed -e "s:-Werror::g" -i $mf || die
 	done
 
-	# Prevent the downloading of ipxe
-	sed -e 's:^\tif ! wget -O _$T:#\tif ! wget -O _$T:' \
-		-e 's:^\tfi:#\tfi:' -i \
-		-e 's:^\tmv _$T $T:#\tmv _$T $T:' \
-		-i tools/firmware/etherboot/Makefile || die
-
 	# Bug 472438
 	sed -e 's:^BASH_COMPLETION_DIR ?= $(CONFIG_DIR)/bash_completion.d:BASH_COMPLETION_DIR ?= $(SHARE_DIR)/bash-completion:' \
 		-i Config.mk || die
+
+	use flask || sed -e "/SUBDIRS-y += flask/d" -i tools/Makefile || die
+	use api   || sed -e "/SUBDIRS-\$(LIBXENAPI_BINDINGS) += libxen/d" -i tools/Makefile || die
+
+	# why need LC_ALL=C
+	sed -e 's:$(MAKE) PYTHON=$(PYTHON) subdirs-$@:LC_ALL=C "$(MAKE)" PYTHON=$(PYTHON) subdirs-$@:' -i tools/firmware/Makefile || die
 
 	epatch_user
 }
