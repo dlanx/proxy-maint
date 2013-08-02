@@ -19,7 +19,7 @@ if [[ $PV == *9999 ]]; then
 	EGIT_REPO_URI_QEMU="git://xenbits.xen.org/qemu-upstream-unstable.git"
 	EGIT_REPO_URI_TRAD="git://xenbits.xen.org/qemu-xen-unstable.git"
 	EGIT_REPO_URI_SEAB="git://xenbits.xen.org/seabios.git"
-	EGIT_REPO_URI_SEAB="git://git.ipxe.org/ipxe.git"
+	EGIT_REPO_URI_IPXE="git://git.ipxe.org/ipxe.git"
 	S="${WORKDIR}/xen"
 	live_eclass="git-2"
 else
