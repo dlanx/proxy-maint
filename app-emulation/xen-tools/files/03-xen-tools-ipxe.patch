@@ -1,0 +1,16 @@
+diff --git a/tools/firmware/etherboot/Makefile b/tools/firmware/etherboot/Makefile
+index 15561fc..ae4b865 100644
+--- a/tools/firmware/etherboot/Makefile
++++ b/tools/firmware/etherboot/Makefile
+@@ -36,9 +36,8 @@ $T:
+ 	fi
+ 	mv _$T $T
+ 
+-$D/src/arch/i386/Makefile: $T Config
+-	rm -rf $D
+-	gzip -dc $T | tar xf -
++$D/src/arch/i386/Makefile: Config
++	(cd $D && $(GIT) checkout -b branch-compile $(IPXE_GIT_TAG))
+ 	for i in $$(cat patches/series) ; do                 \
+ 	    patch -d $D -p1 --quiet <patches/$$i || exit 1 ; \
+ 	done

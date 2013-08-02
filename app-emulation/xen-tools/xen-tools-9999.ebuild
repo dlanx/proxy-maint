@@ -19,7 +19,7 @@ if [[ $PV == *9999 ]]; then
 	EGIT_REPO_URI_QEMU="git://xenbits.xen.org/qemu-upstream-unstable.git"
 	EGIT_REPO_URI_TRAD="git://xenbits.xen.org/qemu-xen-unstable.git"
 	EGIT_REPO_URI_SEAB="git://xenbits.xen.org/seabios.git"
-	SRC_URI="http://dev.gentoo.org/~alexxy/distfiles/ipxe-git-${IPXE_COMMIT}.tar.gz"
+	EGIT_REPO_URI_SEAB="git://git.ipxe.org/ipxe.git"
 	S="${WORKDIR}/xen"
 	live_eclass="git-2"
 else
@@ -46,7 +46,6 @@ CDEPEND="dev-libs/lzo:2
 	dev-libs/yajl
 	dev-python/lxml[${PYTHON_USEDEP}]
 	dev-python/pypam[${PYTHON_USEDEP}]
-	dev-python/pyxml
 	sys-libs/zlib
 	sys-power/iasl
 	dev-ml/findlib
@@ -165,7 +164,7 @@ pkg_setup() {
 	fi
 
 	use api     && export "LIBXENAPI_BINDINGS=y"
-	use flask   && export "FLASK_ENABLE=y"
+	use flask   && export "FLASK_ENABLE=y" "XSM_ENABLE=y"
 }
 
 src_unpack() {
@@ -173,10 +172,10 @@ src_unpack() {
 	xen-tools_unpack "${EGIT_REPO_URI_QEMU}" tools/qemu-xen-dir
 	xen-tools_unpack "${EGIT_REPO_URI_TRAD}" tools/qemu-xen-traditional-dir
 	xen-tools_unpack "${EGIT_REPO_URI_SEAB}" tools/firmware/seabios-dir 1.7.1-stable-xen
+	xen-tools_unpack "${EGIT_REPO_URI_IPXE}" tools/firmware/etherboot
 }
 
 src_prepare() {
-	cp "$DISTDIR/ipxe-git-${IPXE_COMMIT}.tar.gz" tools/firmware/etherboot/ipxe.tar.gz
 	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
 
 	# Drop .config
