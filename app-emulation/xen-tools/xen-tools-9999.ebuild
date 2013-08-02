@@ -131,7 +131,7 @@ xen-tools_unpack() {
 }
 
 pkg_setup() {
-	python_single-r1_pkg_setup
+	python-single-r1_pkg_setup
 	export "CONFIG_LOMOUNT=y"
 	export "CONFIG_TESTS=n"
 
