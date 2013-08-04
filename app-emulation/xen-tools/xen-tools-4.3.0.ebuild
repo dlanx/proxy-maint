@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-9999.ebuild,v 1.7 2011/10/23 10:49:29 patrick Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.3.0.ebuild,v 1.17 2013/08/01 08:16:07 idella4 Exp $
 
 EAPI=5
 
@@ -12,13 +12,10 @@ XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-dir-remote-2013
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
-	EGIT_REPO_URI_MAIN="git://xenbits.xen.org/xen.git"
-	EGIT_REPO_URI_QEMU="git://xenbits.xen.org/qemu-upstream-unstable.git"
-	EGIT_REPO_URI_TRAD="git://xenbits.xen.org/qemu-xen-unstable.git"
-	EGIT_REPO_URI_SEAB="git://xenbits.xen.org/seabios.git"
-	EGIT_REPO_URI_IPXE="git://git.ipxe.org/ipxe.git"
-	S="${WORKDIR}/xen"
-	live_eclass="git-2"
+	REPO="xen-unstable.hg"
+	EHG_REPO_URI="http://xenbits.xensource.com/${REPO}"
+	S="${WORKDIR}/${REPO}"
+	live_eclass="mercurial"
 else
 	KEYWORDS="~amd64 ~x86"
 	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
@@ -31,7 +28,7 @@ inherit bash-completion-r1 eutils flag-o-matic multilib python-single-r1 toolcha
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
-DOCS=( README docs/README.xen-bugtool docs/ChangeLog )
+DOCS=( README docs/README.xen-bugtool )
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -51,7 +48,6 @@ CDEPEND="dev-libs/lzo:2
 	api? ( dev-libs/libxml2
 		net-misc/curl )
 	pygrub? ( ${PYTHON_DEPS//${PYTHON_REQ_USE}/ncurses} )"
-
 DEPEND="${CDEPEND}
 	sys-devel/bin86
 	sys-devel/dev86
@@ -74,7 +70,6 @@ DEPEND="${CDEPEND}
 	hvm? ( x11-proto/xproto
 		!net-libs/libiscsi )
 	qemu? ( x11-libs/pixman )"
-
 RDEPEND="${CDEPEND}
 	sys-apps/iproute2
 	net-misc/bridge-utils
@@ -94,7 +89,6 @@ RESTRICT="test"
 pkg_setup() {
 	python-single-r1_pkg_setup
 	export "CONFIG_LOMOUNT=y"
-	export "CONFIG_TESTS=n"
 
 	if has_version dev-libs/libgcrypt; then
 		export "CONFIG_GCRYPT=y"
@@ -124,35 +118,12 @@ pkg_setup() {
 			die "Unsupported architecture!"
 		fi
 	fi
-
-	use api     && export "LIBXENAPI_BINDINGS=y"
-	use flask   && export "FLASK_ENABLE=y" "XSM_ENABLE=y"
-}
-
-src_unpack() {
-	EGIT_REPO_URI=${EGIT_REPO_URI_MAIN} \
-		EGIT_SOURCEDIR=${S} git-2_src_unpack
-
-	EGIT_REPO_URI=${EGIT_REPO_URI_QEMU} \
-		EGIT_SOURCEDIR=${S}/tools/qemu-xen-dir git-2_src_unpack
-
-	EGIT_REPO_URI=${EGIT_REPO_URI_TRAD} \
-		EGIT_SOURCEDIR=${S}/tools/qemu-xen-traditional-dir git-2_src_unpack
-
-	EGIT_REPO_URI=${EGIT_REPO_URI_SEAB} \
-		EGIT_SOURCEDIR=${S}/tools/firmware/seabios-dir \
-		EGIT_COMMIT="1.7.1-stable-xen" \
-		EGIT_BRANCH="1.7.1-stable-xen" git-2_src_unpack
-
-	EGIT_REPO_URI=${EGIT_REPO_URI_IPXE} \
-		EGIT_SOURCEDIR=${S}/tools/firmware/etherboot/ipxe git-2_src_unpack
 }
 
 src_prepare() {
-	sed -e 's/-Wall//' -i Config.mk || die "Couldn't sanitize CFLAGS"
+	# Drop .config, fixes to gcc-4.6
+	epatch "${FILESDIR}"/${PN/-tools/}-4.3-fix_dotconfig-gcc.patch
 
-	# Drop .config
-	sed -e '/-include $(XEN_ROOT)\/.config/d' -i Config.mk || die "Couldn't drop"
 	# Xend
 	if ! use xend; then
 		sed -e 's:xm xen-bugtool xen-python-path xend:xen-bugtool xen-python-path:' \
@@ -177,7 +148,7 @@ src_prepare() {
 	fi
 
 	if ! use pygrub; then
-		sed -e '/^SUBDIRS-y += pygrub$/d' -i tools/Makefile || die
+		sed -e '/^SUBDIRS-y += pygrub/d' -i tools/Makefile || die
 	fi
 
 	if ! use python; then
@@ -196,32 +167,67 @@ src_prepare() {
 		sed -e "s:install-tools\: tools/ioemu-dir:install-tools\: :g" -i Makefile || die
 	fi
 
-	# Fix build for gcc-4.6
-	local WERROR=(
-		"tools/libxl/Makefile"
-		"tools/xenstat/xentop/Makefile"
-		)
-	for mf in ${WERROR[@]} ; do
-		sed -e "s:-Werror::g" -i $mf || die
-	done
+	# Fix texi2html build error with new texi2html, qemu.doc.html
+	epatch "${FILESDIR}"/${PN}-4-docfix.patch \
+		"${FILESDIR}"/${PN}-4-qemu-xen-doc.patch
+
+	# Fix network broadcast on bridged networks
+	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
+
+	# Prevent the downloading of ipxe, seabios
+	epatch "${FILESDIR}"/${P/-tools/}-anti-download.patch
+	cp "${DISTDIR}"/ipxe.tar.gz tools/firmware/etherboot/ || die
+	mv ../seabios-dir-remote tools/firmware/ || die
+	pushd tools/firmware/ > /dev/null
+	ln -s seabios-dir-remote seabios-dir || die
+	popd > /dev/null
+
+	# Fix bridge by idella4, bug #362575
+	epatch "${FILESDIR}/${PN}-4.1.1-bridge.patch"
+
+	# Don't build ipxe with pie on hardened, Bug #360805
+	if gcc-specs-pie; then
+		epatch "${FILESDIR}"/ipxe-nopie.patch
+	fi
+
+	# Prevent double stripping of files at install
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-nostrip.patch
+
+	# fix jobserver in Makefile
+	epatch "${FILESDIR}"/${PN/-tools/}-4.3-jserver.patch
+
+	# add missing header
+	epatch "${FILESDIR}"/xen-4-ulong.patch
+
+	# Set dom0-min-mem to kb; Bug #472982
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2-configsxp.patch
+
+	#Security patches, currently valid
+	epatch "${FILESDIR}"/xen-4-CVE-2012-6075-XSA-41.patch \
+		"${FILESDIR}"/xen-4-CVE-2013-1922-XSA-48.patch
 
 	# Bug 472438
 	sed -e 's:^BASH_COMPLETION_DIR ?= $(CONFIG_DIR)/bash_completion.d:BASH_COMPLETION_DIR ?= $(SHARE_DIR)/bash-completion:' \
 		-i Config.mk || die
 
+	# Bug 477676
+	epatch "${FILESDIR}"/${PN}-4.3-ar-cc.patch
+
+	# Prevent file collision with qemu package Bug 478064
+	if use qemu; then
+		epatch "${FILESDIR}"/qemu-bridge.patch
+		mv tools/qemu-xen/qemu-bridge-helper.c tools/qemu-xen/xen-bridge-helper.c || die
+	fi
+
 	use flask || sed -e "/SUBDIRS-y += flask/d" -i tools/Makefile || die
 	use api   || sed -e "/SUBDIRS-\$(LIBXENAPI_BINDINGS) += libxen/d" -i tools/Makefile || die
-
-	# why need LC_ALL=C
 	sed -e 's:$(MAKE) PYTHON=$(PYTHON) subdirs-$@:LC_ALL=C "$(MAKE)" PYTHON=$(PYTHON) subdirs-$@:' -i tools/firmware/Makefile || die
 
 	epatch_user
 }
 
 src_configure() {
-	econf \
-		--enable-lomount \
-		--disable-werror
+	econf --prefix=/usr --disable-werror
 }
 
 src_compile() {
@@ -238,8 +244,7 @@ src_compile() {
 	unset CFLAGS
 	emake V=1 CC="$(tc-getCC)" LD="$(tc-getLD)" AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)" -C tools ${myopt}
 
-	# add figs if media-gfx/transfig enabled
-	use doc && emake -C docs txt html figs
+	use doc && emake -C docs txt html
 	emake -C docs man-pages
 }
 
@@ -252,14 +257,14 @@ src_install() {
 	local PYTHONDONTWRITEBYTECODE
 	export PYTHONDONTWRITEBYTECODE
 
-	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" \
+	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" \
 		XEN_PYTHON_NATIVE_INSTALL=y install-tools
 
 	# Fix the remaining Python shebangs.
 	python_fix_shebang "${D}"
 
 	# Remove RedHat-specific stuff
-	rm -rf "${D}"/tmp || die
+	rm -rf "${D}"tmp || die
 
 	# uncomment lines in xl.conf
 	sed -e 's:^#autoballoon=1:autoballoon=1:' \
@@ -273,6 +278,7 @@ src_install() {
 	if use doc; then
 		emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-docs
 
+		dohtml -r docs/
 		docinto pdf
 		dodoc ${DOCS[@]}
 		[ -d "${D}"/usr/share/doc/xen ] && mv "${D}"/usr/share/doc/xen/* "${D}"/usr/share/doc/${PF}/html
@@ -282,7 +288,7 @@ src_install() {
 	doman docs/man?/*
 
 	if use xend; then
-		newinitd "${FILESDIR}"/xend.initd-r2 xend
+		newinitd "${FILESDIR}"/xend.initd-r2 xend || die "Couldn't install xen.initd"
 	fi
 	newconfd "${FILESDIR}"/xendomains.confd xendomains
 	newconfd "${FILESDIR}"/xenstored.confd xenstored
