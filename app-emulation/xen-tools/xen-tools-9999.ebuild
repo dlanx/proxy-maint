@@ -12,10 +12,7 @@ XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-dir-remote-2013
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
-	REPO="xen-unstable.hg"
-	XEN_EXTFILES_URL="http://xenbits.xensource.com/xen-extfiles"
-	IPXE_COMMIT="9a93db3f0947484e30e753bbd61a10b17336e20e"
-	EGIT_REPO_URI="git://xenbits.xen.org/xen.git"
+	EGIT_REPO_URI_MAIN="git://xenbits.xen.org/xen.git"
 	EGIT_REPO_URI_QEMU="git://xenbits.xen.org/qemu-upstream-unstable.git"
 	EGIT_REPO_URI_TRAD="git://xenbits.xen.org/qemu-xen-unstable.git"
 	EGIT_REPO_URI_SEAB="git://xenbits.xen.org/seabios.git"
@@ -94,41 +91,6 @@ QA_WX_LOAD="usr/lib/xen/boot/hvmloader"
 
 RESTRICT="test"
 
-xen-tools_init_variables() {
-	EGIT_REPO_URI="$1"
-	EGIT_DEST="$2"
-	EGIT_BRANCH="${3:-master}"
-	EGIT_PROJECT="${EGIT_REPO_URI##*/}"
-	EGIT_SOURCEDIR=${WORKDIR}/${EGIT_PROJECT%.git}
-}
-
-xen-tools_checkout() {
-	# just create proper symbol link
-	ln -s ${WORKDIR}/${EGIT_PROJECT%.git} ${S}/${EGIT_DEST} || die
-}
-
-xen-tools_cleanup() {
-	unset EGIT_BRANCH
-	unset EGIT_COMMIT
-}
-
-xen-tools_unpack() {
-	xen-tools_init_variables $@
-
-	git-2_init_variables
-	git-2_prepare_storedir
-	git-2_migrate_repository
-	git-2_fetch
-	git-2_gc
-	git-2_submodules
-	git-2_move_source
-	git-2_branch
-
-	xen-tools_checkout
-	git-2_cleanup
-	xen-tools_cleanup
-}
-
 pkg_setup() {
 	python-single-r1_pkg_setup
 	export "CONFIG_LOMOUNT=y"
@@ -168,11 +130,22 @@ pkg_setup() {
 }
 
 src_unpack() {
-	git-2_src_unpack
-	xen-tools_unpack "${EGIT_REPO_URI_QEMU}" tools/qemu-xen-dir
-	xen-tools_unpack "${EGIT_REPO_URI_TRAD}" tools/qemu-xen-traditional-dir
-	xen-tools_unpack "${EGIT_REPO_URI_SEAB}" tools/firmware/seabios-dir 1.7.1-stable-xen
-	xen-tools_unpack "${EGIT_REPO_URI_IPXE}" tools/firmware/etherboot
+	EGIT_REPO_URI=${EGIT_REPO_URI_MAIN} \
+		EGIT_SOURCEDIR=${S} git-2_src_unpack
+
+	EGIT_REPO_URI=${EGIT_REPO_URI_QEMU} \
+		EGIT_SOURCEDIR=${S}/tools/qemu-xen-dir git-2_src_unpack
+
+	EGIT_REPO_URI=${EGIT_REPO_URI_TRAD} \
+		EGIT_SOURCEDIR=${S}/tools/qemu-xen-traditional-dir git-2_src_unpack
+
+	EGIT_REPO_URI=${EGIT_REPO_URI_SEAB} \
+		EGIT_SOURCEDIR=${S}/tools/firmware/seabios-dir \
+		EGIT_COMMIT="1.7.1-stable-xen" \
+		EGIT_BRANCH="1.7.1-stable-xen" git-2_src_unpack
+
+	EGIT_REPO_URI=${EGIT_REPO_URI_IPXE} \
+		EGIT_SOURCEDIR=${S}/tools/firmware/etherboot/ipxe git-2_src_unpack
 }
 
 src_prepare() {
