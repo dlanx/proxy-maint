@@ -12,7 +12,7 @@ SRC_URI="http://rimeime.googlecode.com/files/${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="static-libs test"
 
 RDEPEND="app-i18n/opencc
@@ -27,15 +27,11 @@ DEPEND="${RDEPEND}
 
 S="${WORKDIR}/${PN}"
 
-PATCHES=(
-	"${FILESDIR}/${PN}-test.patch"
-	"${FILESDIR}/${PN}-dictionary.patch"
-)
-
 src_configure() {
 	local mycmakeargs=(
 		$(cmake-utils_use_build static-libs STATIC)
 		-DBUILD_DATA=OFF
+		-DBUILD_SEPARATE_LIBS=OFF
 		$(cmake-utils_use_build test TEST)
 		-DLIB_INSTALL_DIR=/usr/$(get_libdir)
 	)
