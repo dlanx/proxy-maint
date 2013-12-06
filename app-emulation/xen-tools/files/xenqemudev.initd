@@ -34,7 +34,7 @@ xen_setvars() {
 
 xen_qemu_start() {
 	if [ -z "${XEN_QEMU_FILE_BACKEND_ENABLE}" ]; then
-		ewarn "  QEMU disk backed not enabled"
+		ewarn "  QEMU disk backend not enabled"
 		return 1
 	fi
 
@@ -58,7 +58,7 @@ xen_qemu_start() {
 }
 
 start() {
-	ebegin "Starting xenextra daemon"
+	ebegin "Starting xenqemudev daemon"
 
 	# not running in Xen dom0 or domU
 	if [ ! -d /proc/xen ]; then
@@ -67,22 +67,22 @@ start() {
 	fi
 
 	if ! is_privileged_domain; then
-		eend 1 "Not running on a privileged domain. xenextra not started"
+		eend 1 "Not running on a privileged domain. xenqemudev not started"
 		return 1
 	fi
 
 	xen_qemu_start
 
-	eend $? "Failed to start xenextra"
+	eend $? "Failed to start xenqemudev"
 }
 
 stop () {
-	ebegin "Stopping xenextra"
+	ebegin "Stopping xenqemudev"
 
 	xen_setvars
 
 	start-stop-daemon --stop --exec ${XEN_QEMU} \
 		--pidfile ${XEN_QEMU_PIDFILE}
 
-	eend $? "Stopping xenextra, as it cannot be restarted."
+	eend $? "Stopping xenqemudev, as it cannot be restarted."
 }
