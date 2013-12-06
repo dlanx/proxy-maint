@@ -1,0 +1,4 @@
+# /etc/conf.d/xenqemudev
+
+# Common options for xenqemudev
+XENQEMUDEV_OPTS=""
