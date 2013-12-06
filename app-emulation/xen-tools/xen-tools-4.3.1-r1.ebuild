@@ -394,6 +394,8 @@ pkg_postinst() {
 		elog "build of qemu.  This allows for app-emulation/qemu to be emerged concurrently"
 		elog "with the qemu capable xen.  It is up to the user to distinguish between and utilise"
 		elog "the qemu-bridge-helper and the xen-bridge-helper.  File bugs of any issues that arise"
+		elog ""
+		elog "To utilise file-backed filesystem for a domU, add xenqemudev with rc-update"
 	fi
 
 	if grep -qsF XENSV= "${ROOT}/etc/conf.d/xend"; then
