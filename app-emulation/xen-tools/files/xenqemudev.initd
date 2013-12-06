@@ -33,8 +33,9 @@ xen_setvars() {
 }
 
 xen_qemu_start() {
-	if [ -z "${XEN_QEMU_FILE_BACKEND_ENABLE}" ]; then
+	if [ -z "${XENQEMUDEV_FILE_BACKEND_ENABLE}" ]; then
 		ewarn "  QEMU disk backend not enabled"
+		ewarn "  enable XENQEMUDEV_FILE_BACKEND_ENABLE in /etc/conf.d/xenqemudev"
 		return 1
 	fi
 
