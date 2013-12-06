@@ -308,13 +308,16 @@ src_install() {
 	if use xend; then
 		newinitd "${FILESDIR}"/xend.initd-r2 xend || die "Couldn't install xen.initd"
 	fi
+	newconfd "${FILESDIR}"/xencommons.confd xencommons
 	newconfd "${FILESDIR}"/xendomains.confd xendomains
 	newconfd "${FILESDIR}"/xenstored.confd xenstored
 	newconfd "${FILESDIR}"/xenconsoled.confd xenconsoled
+	newconfd "${FILESDIR}"/xenqemudev.confd xenqemudev
+	newinitd "${FILESDIR}"/xencommons.initd xencommons
 	newinitd "${FILESDIR}"/xendomains.initd-r2 xendomains
 	newinitd "${FILESDIR}"/xenstored.initd xenstored
 	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
-	newinitd tools/hotplug/Linux/init.d/xencommons xencommons
+	newinitd "${FILESDIR}"/xenqemudev.initd xenqemudev
 
 	if use screen; then
 		cat "${FILESDIR}"/xendomains-screen.confd >> "${D}"/etc/conf.d/xendomains || die
