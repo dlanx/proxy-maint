@@ -48,11 +48,16 @@ xen_qemu_start() {
 	if [ -e "${XEN_QEMU}" ]; then
 		einfo "  Starting QEMU as disk backend for dom0"
 
+		XENQEMUDEV_DEFAULT_OPTS="-xen-domid 0 -xen-attach -name dom0 \
+			-nographic -M xenpv -daemonize \
+			-monitor /dev/null -serial /dev/null -parallel /dev/null"
+
+		XENQEMUDEV_OPTS=${XENQEMUDEV_OPTS:-${XENQEMUDEV_DEFAULT_OPTS}}
+
 		start-stop-daemon --start --exec ${XEN_QEMU} \
 			--pidfile ${XENQEMUDEV_PIDFILE} \
 			-- -pidfile ${XENQEMUDEV_PIDFILE} \
-			-xen-domid 0 -xen-attach -name dom0 -nographic -M xenpv -daemonize \
-			-monitor /dev/null -serial /dev/null -parallel /dev/null
+			${XENQEMUDEV_OPTS}
 		return $?
 	fi
 }
