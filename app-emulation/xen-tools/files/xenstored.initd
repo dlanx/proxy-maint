@@ -11,8 +11,8 @@ start() {
 	! [ -x /run/xen ] && mkdir -p /run/xen
 	ebegin "Starting xenstored daemon"
 	start-stop-daemon --start --exec /usr/sbin/xenstored \
-		--pidfile /var/run/xenstored.pid \
-		-- --pid-file=/var/run/xenstored.pid \
+		--pidfile /run/xenstored.pid \
+		-- --pid-file=/run/xenstored.pid \
 		$XENSTORED_OPTS
 	until xenstore-exists \ || ((15 < ++i))
 	do
@@ -27,6 +27,6 @@ start() {
 stop() {
 	ebegin "Stopping xenstored daemon"
 	start-stop-daemon --stop --exec /usr/sbin/xenstored \
-		--pidfile /var/run/xenstored.pid
+		--pidfile /run/xenstored.pid
 	eend $?
 }
