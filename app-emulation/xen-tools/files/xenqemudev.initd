@@ -28,7 +28,7 @@ xen_qemu_exec() {
 }
 
 xen_setvars() {
-	XEN_QEMU_PIDFILE=/run/qemu-dom0.pid
+	XENQEMUDEV_PIDFILE=/run/xenqemudev.pid
 	XEN_QEMU=$(xen_qemu_exec)
 }
 
@@ -49,8 +49,8 @@ xen_qemu_start() {
 		einfo "  Starting QEMU as disk backend for dom0"
 
 		start-stop-daemon --start --exec ${XEN_QEMU} \
-			--pidfile ${XEN_QEMU_PIDFILE} \
-			-- -pidfile ${XEN_QEMU_PIDFILE} \
+			--pidfile ${XENQEMUDEV_PIDFILE} \
+			-- -pidfile ${XENQEMUDEV_PIDFILE} \
 			-xen-domid 0 -xen-attach -name dom0 -nographic -M xenpv -daemonize \
 			-monitor /dev/null -serial /dev/null -parallel /dev/null
 		return $?
@@ -82,7 +82,7 @@ stop () {
 	xen_setvars
 
 	start-stop-daemon --stop --exec ${XEN_QEMU} \
-		--pidfile ${XEN_QEMU_PIDFILE}
+		--pidfile ${XENQEMUDEV_PIDFILE}
 
 	eend $? "Stopping xenqemudev, as it cannot be restarted."
 }
