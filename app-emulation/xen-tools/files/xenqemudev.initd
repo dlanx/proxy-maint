@@ -1,0 +1,88 @@
+#!/sbin/runscript
+# Copyright 1999-2013 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+depend() {
+	need xencommons xenstored xenconsoled
+}
+
+is_privileged_domain() {
+	grep -qsE '^control_d$' /proc/xen/capabilities
+	return $?
+}
+
+xen_qemu_exec() {
+	. /etc/xen/scripts/hotplugpath.sh
+
+	case $(uname -m) in
+		i686|x86_64)
+			printf "${LIBEXEC}/qemu-system-i386"
+			;;
+		arm|arm64)
+			;;
+		*)
+			printf "NOT_FOUND_XEN_QEMU_EXEC"
+			;;
+	esac
+}
+
+xen_setvars() {
+	XEN_QEMU_PIDFILE=/run/qemu-dom0.pid
+	XEN_QEMU=$(xen_qemu_exec)
+}
+
+xen_qemu_start() {
+	if [ -z "${XEN_QEMU_FILE_BACKEND_ENABLE}" ]; then
+		ewarn "  QEMU disk backed not enabled"
+		return 1
+	fi
+
+	xen_setvars
+
+	if [ ! -c /dev/xen/gntdev ]; then
+		einfo "  Xen gntdev driver not loaded"
+		return 1
+	fi
+
+	if [ -e "${XEN_QEMU}" ]; then
+		einfo "  Starting QEMU as disk backend for dom0"
+
+		start-stop-daemon --start --exec ${XEN_QEMU} \
+			--pidfile ${XEN_QEMU_PIDFILE} \
+			-- -pidfile ${XEN_QEMU_PIDFILE} \
+			-xen-domid 0 -xen-attach -name dom0 -nographic -M xenpv -daemonize \
+			-monitor /dev/null -serial /dev/null -parallel /dev/null
+		return $?
+	fi
+}
+
+start() {
+	ebegin "Starting xenextra daemon"
+
+	# not running in Xen dom0 or domU
+	if [ ! -d /proc/xen ]; then
+		eend 1 "Not running in Xen mode"
+		return 1
+	fi
+
+	if ! is_privileged_domain; then
+		eend 1 "Not running on a privileged domain. xenextra not started"
+		return 1
+	fi
+
+	xen_qemu_start
+
+	eend $? "Failed to start xenextra"
+}
+
+stop () {
+	ebegin "Stopping xenextra"
+
+	xen_setvars
+
+	start-stop-daemon --stop --exec ${XEN_QEMU} \
+		--pidfile ${XEN_QEMU_PIDFILE}
+
+	eend $? "Stopping xenextra, as it cannot be restarted."
+}
