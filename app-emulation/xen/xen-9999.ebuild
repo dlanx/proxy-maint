@@ -2,28 +2,31 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/xen/xen-9999.ebuild,v 1.4 2011/09/11 14:48:15 alexxy Exp $
 
-EAPI="5"
+EAPI=5
+
+PYTHON_COMPAT=( python2_7 )
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
 	EGIT_REPO_URI="git://xenbits.xen.org/${PN}.git"
-	live_eclass="git-2"
+	live_eclass="git-r3"
 else
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="~amd64"
 	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz"
 fi
 
-inherit mount-boot flag-o-matic toolchain-funcs ${live_eclass}
+inherit mount-boot flag-o-matic python-any-r1 toolchain-funcs eutils ${live_eclass}
 
 DESCRIPTION="The Xen virtual machine monitor"
 HOMEPAGE="http://xen.org/"
-
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="custom-cflags debug flask pae xsm"
+IUSE="custom-cflags debug efi flask xsm"
 
-RDEPEND="|| ( sys-boot/grub
-		sys-boot/grub-static )"
+DEPEND="${PYTHON_DEPS}
+	efi? ( >=sys-devel/binutils-2.22[multitarget] )
+	!efi? ( >=sys-devel/binutils-2.22[-multitarget] )"
+RDEPEND=""
 PDEPEND="~app-emulation/xen-tools-${PV}"
 
 RESTRICT="test"
@@ -34,6 +37,7 @@ QA_WX_LOAD="boot/xen-syms-${PV}"
 REQUIRED_USE="flask? ( xsm )"
 
 pkg_setup() {
+	python-any-r1_pkg_setup
 	if [[ -z ${XEN_TARGET_ARCH} ]]; then
 		if use x86 && use amd64; then
 			die "Confusion! Both x86 and amd64 are set in your use flags!"
@@ -58,6 +62,12 @@ src_prepare() {
 	# Drop .config
 	sed -e '/-include $(XEN_ROOT)\/.config/d' -i Config.mk || die "Couldn't	drop"
 
+	if use efi; then
+		epatch "${FILESDIR}"/${PN}-4.2-efi.patch
+		export EFI_VENDOR="gentoo"
+		export EFI_MOUNTPOINT="boot"
+	fi
+
 	# if the user *really* wants to use their own custom-cflags, let them
 	if use custom-cflags; then
 		einfo "User wants their own CFLAGS - removing defaults"
@@ -68,7 +78,7 @@ src_prepare() {
 			-e 's/CFLAGS\(.*\)=\(.*\)-fomit-frame-pointer\(.*\)/CFLAGS\1=\2\3/' \
 			-e 's/CFLAGS\(.*\)=\(.*\)-g3*\s\(.*\)/CFLAGS\1=\2 \3/' \
 			-e 's/CFLAGS\(.*\)=\(.*\)-O2\(.*\)/CFLAGS\1=\2\3/' \
-			-i {} \;
+			-i {} \; || die "failed to re-set custom-cflags"
 	fi
 
 	# remove -Werror for gcc-4.6's sake
@@ -76,11 +86,12 @@ src_prepare() {
 		xargs sed -i 's/ *-Werror */ /'
 	# not strictly necessary to fix this
 	sed -i 's/, "-Werror"//' "${S}/tools/python/setup.py" || die "failed to re-set setup.py"
+
+	epatch_user
 }
 
 src_configure() {
 	use debug && myopt="${myopt} debug=y"
-	use pae && myopt="${myopt} pae=y"
 
 	if use custom-cflags; then
 		filter-flags -fPIE -fstack-protector
@@ -98,7 +109,11 @@ src_compile() {
 src_install() {
 	local myopt
 	use debug && myopt="${myopt} debug=y"
-	use pae && myopt="${myopt} pae=y"
+
+	# The 'make install' doesn't 'mkdir -p' the subdirs
+	if use efi; then
+		mkdir -p "${D}"${EFI_MOUNTPOINT}/efi/${EFI_VENDOR} || die
+	fi
 
 	emake LDFLAGS="$(raw-ldflags)" DESTDIR="${D}" -C xen ${myopt} install
 }
@@ -108,8 +123,5 @@ pkg_postinst() {
 	elog " http://www.gentoo.org/doc/en/xen-guide.xml"
 	elog " http://en.gentoo-wiki.com/wiki/Xen/"
 
-	if use pae; then
-		echo
-		ewarn "This is a PAE build of Xen. It will *only* boot PAE kernels!"
-	fi
+	use efi && einfo "The efi executable is installed in boot/efi/gentoo"
 }
