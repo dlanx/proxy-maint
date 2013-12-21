@@ -6,13 +6,16 @@ EAPI=5
 
 PYTHON_COMPAT=( python2_7 )
 
+MY_PV=${PV/_/-}
+MY_P=${PN}-${PV/_/-}
+
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
 	EGIT_REPO_URI="git://xenbits.xen.org/${PN}.git"
 	live_eclass="git-r3"
 else
 	KEYWORDS="~amd64"
-	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz"
+	SRC_URI="http://bits.xensource.com/oss-xen/release/${MY_PV}/${MY_P}.tar.gz"
 fi
 
 inherit mount-boot flag-o-matic python-any-r1 toolchain-funcs eutils ${live_eclass}
@@ -35,6 +38,8 @@ RESTRICT="test"
 QA_WX_LOAD="boot/xen-syms-${PV}"
 
 REQUIRED_USE="flask? ( xsm )"
+
+S="${WORKDIR}/${MY_P}"
 
 pkg_setup() {
 	python-any-r1_pkg_setup
@@ -61,9 +66,6 @@ pkg_setup() {
 src_prepare() {
 	# Drop .config
 	sed -e '/-include $(XEN_ROOT)\/.config/d' -i Config.mk || die "Couldn't	drop"
-
-	# Drop .config and fix gcc-4.6
-	epatch  "${FILESDIR}"/${PN/-pvgrub/}-4.3-fix_dotconfig-gcc.patch
 
 	if use efi; then
 		epatch "${FILESDIR}"/${PN}-4.2-efi.patch
