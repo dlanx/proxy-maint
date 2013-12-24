@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.2.1-r2.ebuild,v 1.6 2013/03/05 18:05:35 idella4 Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/xen-tools-4.3.1-r3.ebuild,v 1.4 2013/12/22 12:01:08 idella4 Exp $
 
 EAPI=5
 
@@ -8,7 +8,7 @@ PYTHON_COMPAT=( python{2_6,2_7} )
 PYTHON_REQ_USE='xml,threads'
 
 IPXE_TARBALL_URL="http://dev.gentoo.org/~idella4/tarballs/ipxe.tar.gz"
-XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-0-20121121.tar.bz2"
+XEN_SEABIOS_URL="http://dev.gentoo.org/~idella4/tarballs/seabios-dir-remote-20130720.tar.gz"
 
 if [[ $PV == *9999 ]]; then
 	KEYWORDS=""
@@ -17,14 +17,14 @@ if [[ $PV == *9999 ]]; then
 	S="${WORKDIR}/${REPO}"
 	live_eclass="mercurial"
 else
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="amd64 x86"
 	SRC_URI="http://bits.xensource.com/oss-xen/release/${PV}/xen-${PV}.tar.gz
 	$IPXE_TARBALL_URL
 	$XEN_SEABIOS_URL"
 	S="${WORKDIR}/xen-${PV}"
 fi
 
-inherit flag-o-matic eutils multilib python-single-r1 toolchain-funcs udev ${live_eclass}
+inherit bash-completion-r1 eutils flag-o-matic multilib python-single-r1 toolchain-funcs udev ${live_eclass}
 
 DESCRIPTION="Xend daemon and tools"
 HOMEPAGE="http://xen.org/"
@@ -32,33 +32,38 @@ DOCS=( README docs/README.xen-bugtool )
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="api custom-cflags debug doc flask hvm qemu ocaml pygrub screen static-libs xend"
+# Inclusion of IUSE ocaml on stabalizing requires maintainer of ocaml to (get off his hands and) make 
+# >=dev-lang/ocaml-4 stable
+# Masked in profiles/eapi-5-files instead
+IUSE="api custom-cflags debug doc flask hvm qemu ocaml +pam python pygrub screen static-libs xend"
 
-REQUIRED_USE="hvm? ( qemu )"
+REQUIRED_USE="hvm? ( qemu )
+	${PYTHON_REQUIRED_USE}
+	pygrub? ( python )"
 
-CDEPEND="<dev-libs/yajl-2
+DEPEND="dev-libs/lzo:2
+	dev-libs/yajl
+	dev-libs/libgcrypt
 	dev-python/lxml[${PYTHON_USEDEP}]
-	dev-python/pypam[${PYTHON_USEDEP}]
+	pam? ( dev-python/pypam[${PYTHON_USEDEP}] )
 	sys-libs/zlib
 	sys-power/iasl
-	ocaml? ( dev-ml/findlib )
 	hvm? ( media-libs/libsdl )
 	${PYTHON_DEPS}
 	api? ( dev-libs/libxml2
 		net-misc/curl )
-	${PYTHON_DEPS}
-	pygrub? ( ${PYTHON_DEPS//${PYTHON_REQ_USE}/ncurses} )"
-DEPEND="${CDEPEND}
+	pygrub? ( ${PYTHON_DEPS//${PYTHON_REQ_USE}/ncurses} )
 	sys-devel/bin86
 	sys-devel/dev86
 	dev-lang/perl
 	app-misc/pax-utils
+	dev-python/markdown
 	doc? (
 		app-doc/doxygen
 		dev-tex/latex2html[png,gif]
-		media-gfx/transfig
 		media-gfx/graphviz
 		dev-tex/xcolor
+		media-gfx/transfig
 		dev-texlive/texlive-latexextra
 		virtual/latex-base
 		dev-tex/latexmk
@@ -66,12 +71,13 @@ DEPEND="${CDEPEND}
 		dev-texlive/texlive-pictures
 		dev-texlive/texlive-latexrecommended
 	)
-	hvm? (  x11-proto/xproto
-	)"
-RDEPEND="${CDEPEND}
-	sys-apps/iproute2
+	hvm? ( x11-proto/xproto
+		!net-libs/libiscsi )
+	qemu? ( x11-libs/pixman )
+	ocaml? ( dev-ml/findlib
+		>=dev-lang/ocaml-4 )"
+RDEPEND="sys-apps/iproute2
 	net-misc/bridge-utils
-	ocaml? ( >=dev-lang/ocaml-3.12.0 )
 	screen? (
 		app-misc/screen
 		app-admin/logrotate
@@ -116,14 +122,11 @@ pkg_setup() {
 			die "Unsupported architecture!"
 		fi
 	fi
-
-	use api     && export "LIBXENAPI_BINDINGS=y"
-	use flask   && export "FLASK_ENABLE=y"
 }
 
 src_prepare() {
 	# Drop .config, fixes to gcc-4.6
-	epatch "${FILESDIR}"/${PN/-tools/}-4-fix_dotconfig-gcc.patch
+	epatch "${FILESDIR}"/${PN/-tools/}-4.3-fix_dotconfig-gcc.patch
 
 	# Xend
 	if ! use xend; then
@@ -149,7 +152,11 @@ src_prepare() {
 	fi
 
 	if ! use pygrub; then
-		sed -e '/^SUBDIRS-$(PYTHON_TOOLS) += pygrub$/d' -i tools/Makefile || die
+		sed -e '/^SUBDIRS-y += pygrub/d' -i tools/Makefile || die
+	fi
+
+	if ! use python; then
+		sed -e '/^SUBDIRS-y += python$/d' -i tools/Makefile || die
 	fi
 
 	# Disable hvm support on systems that don't support x86_32 binaries.
@@ -164,14 +171,15 @@ src_prepare() {
 		sed -e "s:install-tools\: tools/ioemu-dir:install-tools\: :g" -i Makefile || die
 	fi
 
-	# Fix texi2html build error with new texi2html
-	epatch "${FILESDIR}"/${PN}-4-docfix.patch
+	# Fix texi2html build error with new texi2html, qemu.doc.html
+	epatch "${FILESDIR}"/${PN}-4-docfix.patch \
+		"${FILESDIR}"/${PN}-4-qemu-xen-doc.patch
 
 	# Fix network broadcast on bridged networks
 	epatch "${FILESDIR}/${PN}-3.4.0-network-bridge-broadcast.patch"
 
 	# Prevent the downloading of ipxe, seabios
-	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-anti-download.patch
+	epatch "${FILESDIR}"/${PN/-tools/}-4.3-anti-download.patch
 	cp "${DISTDIR}"/ipxe.tar.gz tools/firmware/etherboot/ || die
 	mv ../seabios-dir-remote tools/firmware/ || die
 	pushd tools/firmware/ > /dev/null
@@ -190,15 +198,65 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-nostrip.patch
 
 	# fix jobserver in Makefile
-	epatch "${FILESDIR}"/${PN/-tools/}-4.2.0-jserver.patch
+	epatch "${FILESDIR}"/${PN/-tools/}-4.3-jserver.patch
 
-	#Sec patch, currently valid
+	# add missing header
+	epatch "${FILESDIR}"/xen-4-ulong.patch
+
+	# Set dom0-min-mem to kb; Bug #472982
+	epatch "${FILESDIR}"/${PN/-tools/}-4.2-configsxp.patch
+
+	#Security patches, currently valid
 	epatch "${FILESDIR}"/xen-4-CVE-2012-6075-XSA-41.patch
 
-	if use hvm; then
-		cp -r "${FILESDIR}"/stubs-32.h xen/tools/include || die "copy of header file failed"
-		einfo "stubs-32.h added"
+	# Bug 472438
+	sed -e 's:^BASH_COMPLETION_DIR ?= $(CONFIG_DIR)/bash_completion.d:BASH_COMPLETION_DIR ?= $(SHARE_DIR)/bash-completion:' \
+		-i Config.mk || die
+
+	# Bug 477676
+	epatch "${FILESDIR}"/${PN}-4.3-ar-cc.patch
+
+	# Prevent file collision with qemu package Bug 478064
+	if use qemu; then
+		epatch "${FILESDIR}"/qemu-bridge.patch
+		mv tools/qemu-xen/qemu-bridge-helper.c tools/qemu-xen/xen-bridge-helper.c || die
 	fi
+
+	use flask || sed -e "/SUBDIRS-y += flask/d" -i tools/Makefile || die
+	use api   || sed -e "/SUBDIRS-\$(LIBXENAPI_BINDINGS) += libxen/d" -i tools/Makefile || die
+	sed -e 's:$(MAKE) PYTHON=$(PYTHON) subdirs-$@:LC_ALL=C "$(MAKE)" PYTHON=$(PYTHON) subdirs-$@:' \
+		 -i tools/firmware/Makefile || die
+
+	# Bug 379537
+	epatch "${FILESDIR}"/fix-gold-ld.patch
+
+	# xencommons, Bug #492332, sed lighter weight than patching
+	sed -e 's:\$QEMU_XEN -xen-domid:test -e "\$QEMU_XEN" \&\& &:' \
+		-i tools/hotplug/Linux/init.d/xencommons || die
+
+	# Bug 493232 fix from http://bugzilla.xensource.com/bugzilla/show_bug.cgi?id=1844
+	sed -e 's:bl->argsspace = 7 + :bl->argsspace = 9 + :' \
+		-i tools/libxl/libxl_bootloader.c || die
+
+	epatch_user
+}
+
+src_configure() {
+	local myconf="--prefix=/usr --disable-werror"
+
+	if use ocaml
+	then
+		myconf="${myconf} $(use_enable ocaml ocamltools)"
+	else
+		myconf="${myconf} --disable-ocamltools"
+	fi
+
+	if ! use pam
+	then
+		myconf="${myconf} --disable-pam"
+	fi
+
+	econf ${myconf}
 }
 
 src_compile() {
@@ -213,7 +271,7 @@ src_compile() {
 
 	unset LDFLAGS
 	unset CFLAGS
-	emake CC="$(tc-getCC)" LD="$(tc-getLD)" -C tools ${myopt}
+	emake V=1 CC="$(tc-getCC)" LD="$(tc-getLD)" AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)" -C tools ${myopt}
 
 	use doc && emake -C docs txt html
 	emake -C docs man-pages
@@ -228,7 +286,8 @@ src_install() {
 	local PYTHONDONTWRITEBYTECODE
 	export PYTHONDONTWRITEBYTECODE
 
-	emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-tools
+	emake DESTDIR="${ED}" DOCDIR="/usr/share/doc/${PF}" \
+		XEN_PYTHON_NATIVE_INSTALL=y install-tools
 
 	# Fix the remaining Python shebangs.
 	python_fix_shebang "${D}"
@@ -241,6 +300,9 @@ src_install() {
 		-e 's:^#lockfile="/var/lock/xl":lockfile="/var/lock/xl":' \
 		-e 's:^#vifscript="vif-bridge":vifscript="vif-bridge":' \
 		-i tools/examples/xl.conf  || die
+
+	# Reset bash completion dir; Bug 472438
+	mv "${D}"bash-completion "${D}"usr/share/ || die
 
 	if use doc; then
 		emake DESTDIR="${D}" DOCDIR="/usr/share/doc/${PF}" install-docs
@@ -263,6 +325,10 @@ src_install() {
 	newinitd "${FILESDIR}"/xendomains.initd-r2 xendomains
 	newinitd "${FILESDIR}"/xenstored.initd xenstored
 	newinitd "${FILESDIR}"/xenconsoled.initd xenconsoled
+	newinitd "${FILESDIR}"/xencommons.initd xencommons
+	newconfd "${FILESDIR}"/xencommons.confd xencommons
+	newinitd "${FILESDIR}"/xenqemudev.initd xenqemudev
+	newconfd "${FILESDIR}"/xenqemudev.confd xenqemudev
 
 	if use screen; then
 		cat "${FILESDIR}"/xendomains-screen.confd >> "${D}"/etc/conf.d/xendomains || die
@@ -270,13 +336,10 @@ src_install() {
 		keepdir /var/log/xen-consoles
 	fi
 
-	# Set dirs for qemu files,; Bug #458818
-	if use qemu; then
-		if use x86; then
-			dodir /usr/lib/xen/bin
-		elif use amd64; then
-			mv "${D}"usr/lib/xen/bin/qemu* "${D}"usr/$(get_libdir)/xen/bin/ || die
-		fi
+	# Move files built with use qemu, Bug #477884
+	if [[ "${ARCH}" == 'amd64' ]] && use qemu; then
+		mkdir -p "${D}"usr/$(get_libdir)/xen/bin || die
+		mv "${D}"usr/lib/xen/bin/* "${D}"usr/$(get_libdir)/xen/bin/ || die
 	fi
 
 	# For -static-libs wrt Bug 384355
@@ -285,7 +348,7 @@ src_install() {
 	fi
 
 	# xend expects these to exist
-	keepdir /var/run/xenstored /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
+	keepdir /var/lib/xenstored /var/xen/dump /var/lib/xen /var/log/xen
 
 	# for xendomains
 	keepdir /etc/xen/auto
@@ -301,9 +364,12 @@ src_install() {
 }
 
 pkg_postinst() {
-	elog "Official Xen Guide and the unoffical wiki page:"
-	elog " http://www.gentoo.org/doc/en/xen-guide.xml"
-	elog " http://gentoo-wiki.com/HOWTO_Xen_and_Gentoo"
+	elog "Official Xen Guide and the offical wiki page:"
+	elog "https://wiki.gentoo.org/wiki/Xen"
+	elog "http://wiki.xen.org/wiki/Main_Page"
+	elog ""
+	elog "Recommended to utilise the xencommons script to config sytem At boot"
+	elog "Add by use of rc-update on completion of the install"
 
 	if [[ "$(scanelf -s __guard -q "${PYTHON}")" ]] ; then
 		echo
@@ -330,13 +396,17 @@ pkg_postinst() {
 		elog "HVM (VT-x and AMD-V) support has been disabled. If you need hvm"
 		elog "support enable the hvm use flag."
 		elog "An x86 or amd64 multilib system is required to build HVM support."
-		echo
-		elog "The qemu use flag has been removed and replaced with hvm."
 	fi
 
 	if use xend; then
-		echo
-		elog "xend capability has been enabled and installed"
+		elog"";elog "xend capability has been enabled and installed"
+	fi
+
+	if use qemu; then
+		elog "The qemu-bridge-helper is renamed to the xen-bridge-helper in the in source"
+		elog "build of qemu.  This allows for app-emulation/qemu to be emerged concurrently"
+		elog "with the qemu capable xen.  It is up to the user to distinguish between and utilise"
+		elog "the qemu-bridge-helper and the xen-bridge-helper.  File bugs of any issues that arise"
 	fi
 
 	if grep -qsF XENSV= "${ROOT}/etc/conf.d/xend"; then
