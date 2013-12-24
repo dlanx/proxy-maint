@@ -1,13 +1,13 @@
 #!/sbin/runscript
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/files/xendomains.initd-r2,v 1.8 2013/07/27 06:11:03 idella4 Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/xen-tools/files/xendomains.initd-r1,v 1.5 2013/07/27 06:11:03 idella4 Exp $
 
 extra_commands="status"
 
 depend() {
-	need xenstored
-	after dhcp xend xenconsoled
+	need xend
+	after dhcp
 }
 
 get_domname() {
@@ -21,7 +21,7 @@ get_domname() {
 }
 
 is_running() {
-	/usr/sbin/xl list "${1}" >/dev/null 2>&1
+	/usr/sbin/xm list "${1}" >/dev/null 2>&1
 }
 
 using_screen() {
@@ -38,8 +38,7 @@ start() {
 	einfo "Starting Xen domains from ${AUTODIR:=/etc/xen/auto}"
 	if using_screen ; then
 		ebegin "Creating screen session to hold domain consoles"
-		(  screen -c ${SCREENRC:-/dev/null} -d -m -S ${SCREEN_NAME} -t dom0 \
-		&& sleep 5 \
+		(  screen -c ${SCREENRC:-/dev/null} -d -m -S ${SCREEN_NAME} -t dom0 && sleep 3 \
 		&& ${screen_cmd} zombie dr \
 		&& logrotate -f /etc/xen/xen-consoles.logrotate \
 		&& ${screen_cmd} logfile  /var/log/xen-consoles/%t.log \
@@ -59,9 +58,9 @@ start() {
 		if ! is_running ${name} ; then
 			ebegin "  Starting domain ${name}"
 			if using_screen ; then
-				${screen_cmd} screen -t ${name} xl create ${dom} -c
+				${screen_cmd} screen -t ${name} xm create ${dom} -c
 			else
-				xl create --quiet ${dom}
+				xm create --quiet ${dom}
 			fi
 			eend $?
 		else
@@ -82,7 +81,7 @@ stop() {
 			name=$(get_domname ${dom})
 			if is_running ${name} ; then
 				ebegin "  Asking domain ${name} to shutdown in the background..."
-				xl shutdown -w ${name} >/dev/null &
+				xm shutdown --wait ${name} >/dev/null &
 			else
 				einfo "  Not stopping domain ${name} - not running"
 			fi
@@ -95,7 +94,7 @@ stop() {
 			name=$(get_domname ${dom})
 			if is_running ${name} ; then
 				ebegin "  Waiting for domain ${name} to shutdown"
-				xl shutdown -w ${name} >/dev/null
+				xm shutdown --wait ${name} >/dev/null
 				eend $?
 			else
 				einfo "  Not stopping domain ${name} - not running"
@@ -114,5 +113,5 @@ stop() {
 }
 
 status() {
-	/usr/sbin/xl list
+	/usr/sbin/xm list
 }
