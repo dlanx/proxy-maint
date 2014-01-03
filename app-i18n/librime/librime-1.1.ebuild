@@ -1,4 +1,4 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/app-i18n/librime/librime-0.9.9.ebuild,v 1.4 2013/09/02 08:06:22 ago Exp $
 
@@ -23,12 +23,11 @@ RDEPEND="app-i18n/opencc
 	sys-libs/zlib
 	x11-proto/xproto"
 DEPEND="${RDEPEND}
-	>=sys-devel/gcc-4.8.0
 	test? ( dev-cpp/gtest )"
 
 S="${WORKDIR}/${PN}"
 
-pkg_setup() {
+pkg_pretend() {
 	if [ ${MERGE_TYPE} != binary ]; then
 		version_is_at_least 4.8.0 "$(gcc-fullversion)" \
 			|| die "Sorry, but gcc-4.8.0 and earlier wont work for librime (see bug 496080)."
