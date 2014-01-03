@@ -29,8 +29,10 @@ DEPEND="${RDEPEND}
 S="${WORKDIR}/${PN}"
 
 pkg_setup() {
-	version_is_at_least 4.8.0 "$(gcc-fullversion)" \
-		|| die "Sorry, but gcc-4.8.0 and earlier wont work for librime (see bug 496080)."
+	if [ ${MERGE_TYPE} != binary ]; then
+		version_is_at_least 4.8.0 "$(gcc-fullversion)" \
+			|| die "Sorry, but gcc-4.8.0 and earlier wont work for librime (see bug 496080)."
+	fi
 }
 
 src_configure() {
