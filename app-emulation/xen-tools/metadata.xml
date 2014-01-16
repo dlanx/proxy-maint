@@ -16,5 +16,6 @@
 		<flag name='xend'>Enable support the xend and xm to manage xen</flag>
 		<flag name='ocaml'>Enable support for the ocaml language</flag>
 		<flag name='pam'>Enable pam support</flag>
+		<flag name='xsm'>Enable Xen security framework support</flag>
 	</use>
 </pkgmetadata>
