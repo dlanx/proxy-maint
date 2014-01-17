@@ -138,6 +138,8 @@ pkg_setup() {
 			die "Unsupported architecture!"
 		fi
 	fi
+	#bug 472438
+	export BASH_COMPLETION_DIR=/usr/share/bash-completion
 }
 
 src_prepare() {
@@ -236,20 +238,13 @@ src_prepare() {
 }
 
 src_configure() {
-	local myconf="--prefix=/usr --libdir=/usr/$(get_libdir) --disable-werror"
-
-	if use ocaml
-	then
-		myconf="${myconf} $(use_enable ocaml ocamltools)"
-	else
-		myconf="${myconf} --disable-ocamltools"
-	fi
-
-	if ! use pam
-	then
-		myconf="${myconf} --disable-pam"
-	fi
-
+	local myconf="--prefix=/usr \
+		--libdir=/usr/$(get_libdir) \
+		--disable-werror
+		$(use_enable pam)
+		$(use_enable api xenapi)
+		$(use_enable ocaml ocamltools)
+		"
 	econf ${myconf}
 }
 
